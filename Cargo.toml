@@ -1,6 +1,6 @@
 [package]
 name = "babushka"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "MIT"
 description = "bin packing and nesting library"
@@ -11,3 +11,6 @@ keywords = ["nesting", "packing", "geometry"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+
+[dev-dependencies]
+minifb = "0.27"
