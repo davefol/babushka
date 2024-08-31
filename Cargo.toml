@@ -11,6 +11,8 @@ keywords = ["nesting", "packing", "geometry"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+approx = "0.5.1"
+num-traits = "0.2.19"
 
 [dev-dependencies]
 minifb = "0.27"
