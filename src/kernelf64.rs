@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 #[derive(Clone, Copy)]
 pub struct Point2D {
     pub x: f64,
@@ -38,6 +40,16 @@ impl crate::segment::Segment for Segment {
     }
 }
 
+impl Add for Point2D {
+    type Output = Self;
+    fn add(self, other: Self) -> Self::Output {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+}
+
 pub struct Polygon {
     pub vertices: Vec<Point2D>,
     pub offset: Point2D,
@@ -46,16 +58,18 @@ pub struct Polygon {
 impl crate::polygon::Polygon for Polygon {
     type Point = Point2D;
     type Segment = Segment;
-    fn iter_vertices(&self) -> impl Iterator<Item = &<Self as crate::polygon::Polygon>::Point> {
+    fn iter_vertices_local(
+        &self,
+    ) -> impl Iterator<Item = &<Self as crate::polygon::Polygon>::Point> {
         self.vertices.iter()
     }
-    fn iter_mut_vertices(
+    fn iter_mut_vertices_local(
         &mut self,
     ) -> impl Iterator<Item = &mut <Self as crate::polygon::Polygon>::Point> {
         self.vertices.iter_mut()
     }
 
-    fn iter_segments(&self) -> impl Iterator<Item = Segment> {
+    fn iter_segments_local(&self) -> impl Iterator<Item = Segment> {
         self.vertices
             .iter()
             .zip(self.vertices.iter().cycle().skip(1))
@@ -68,6 +82,10 @@ impl crate::polygon::Polygon for Polygon {
 
     fn offset(&self) -> &Self::Point {
         &self.offset
+    }
+
+    fn set_offset(&mut self, offset: Self::Point) {
+        self.offset = offset;
     }
 
     fn length(&self) -> usize {

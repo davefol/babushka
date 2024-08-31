@@ -1,11 +1,13 @@
 use approx::{abs_diff_eq, AbsDiffEq};
 use num_traits::{Float, One, Zero};
+use std::iter::Sum;
+use std::ops::Add;
 
 use crate::polygon::Polygon;
 use crate::segment::Segment;
 
-pub trait Point2D: Clone {
-    type Value: Float + AbsDiffEq + Copy;
+pub trait Point2D: Clone + Copy + Add<Self, Output = Self> {
+    type Value: Float + AbsDiffEq + Copy + Sum;
 
     fn x(&self) -> Self::Value;
     fn y(&self) -> Self::Value;
@@ -123,7 +125,7 @@ pub trait Point2D: Clone {
         let mut inside = false;
         let offset_x = polygon.offset().x();
         let offset_y = polygon.offset().y();
-        for seg in polygon.iter_segments() {
+        for seg in polygon.iter_segments_local() {
             let x0 = seg.start().x() + offset_x;
             let y0 = seg.start().y() + offset_y;
             let x1 = seg.end().x() + offset_x;
