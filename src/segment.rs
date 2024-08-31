@@ -1,7 +1,8 @@
 use crate::point::Point2D;
 use num_traits::Float;
+use std::ops::Add;
 
-pub trait Segment {
+pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
     type Point: Point2D;
 
     fn start(&self) -> &Self::Point;

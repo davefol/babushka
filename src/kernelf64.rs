@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Point2D {
     pub x: f64,
     pub y: f64,
@@ -26,6 +26,7 @@ impl crate::point::Point2D for Point2D {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct Segment {
     pub start: Point2D,
     pub end: Point2D,
@@ -40,6 +41,16 @@ impl crate::segment::Segment for Segment {
     }
 }
 
+impl Add<Point2D> for Segment {
+    type Output = Self;
+    fn add(self, other: Point2D) -> Self::Output {
+        Self {
+            start: self.start + other,
+            end: self.end + other,
+        }
+    }
+}
+
 impl Add for Point2D {
     type Output = Self;
     fn add(self, other: Self) -> Self::Output {
@@ -50,6 +61,7 @@ impl Add for Point2D {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Polygon {
     pub vertices: Vec<Point2D>,
     pub offset: Point2D,
@@ -69,7 +81,7 @@ impl crate::polygon::Polygon for Polygon {
         self.vertices.iter_mut()
     }
 
-    fn iter_segments_local(&self) -> impl Iterator<Item = Segment> {
+    fn iter_segments_local(&self) -> impl Iterator<Item = Segment> + Clone {
         self.vertices
             .iter()
             .zip(self.vertices.iter().cycle().skip(1))
