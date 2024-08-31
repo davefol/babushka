@@ -1,6 +1,6 @@
+use crate::bounding_box::BoundingBox;
 use crate::point::Point2D;
 use crate::segment::Segment;
-use crate::bounding_box::BoundingBox;
 use num_traits::Float;
 
 pub trait Polygon {
@@ -32,7 +32,11 @@ pub trait Polygon {
         }
     }
 
-    fn translate(&mut self, dx: <<Self as Polygon>::Point as Point2D>::Value, dy: <<Self as Polygon>::Point as Point2D>::Value) {
+    fn translate(
+        &mut self,
+        dx: <<Self as Polygon>::Point as Point2D>::Value,
+        dy: <<Self as Polygon>::Point as Point2D>::Value,
+    ) {
         for vertex in self.iter_mut_vertices() {
             vertex.set_x(vertex.x() + dx);
             vertex.set_y(vertex.y() + dy);

@@ -115,7 +115,7 @@ pub trait Point2D: Clone {
     }
 
     /// return true if point is inside polygon, false if outside, and None if on perimeter
-    fn in_polygon<T: Polygon<Point = Self>>(&self, polygon: T) -> Option<bool> {
+    fn in_polygon<T: Polygon<Point = Self>>(&self, polygon: &T) -> Option<bool> {
         if polygon.length() < 3 {
             return None;
         }
@@ -154,76 +154,144 @@ pub trait Point2D: Clone {
 }
 
 mod tests {
-    use super::*;
-    use crate::kernelf64::Point2D as Point;
-    use crate::kernelf64::Segment;
 
     #[test]
     fn test_within_distance() {
-        let point1 = Point { x: 0.0, y: 0.0 };
-        let point2 = Point { x: 3.0, y: 4.0 };
+        use super::Point2D as _;
+        use crate::kernelf64::Point2D;
+        let point1 = Point2D { x: 0.0, y: 0.0 };
+        let point2 = Point2D { x: 3.0, y: 4.0 };
 
         assert!(point1.within_distance(&point2, 5.1));
         assert!(!point1.within_distance(&point2, 4.9));
 
-        let point3 = Point { x: 1.0, y: 1.0 };
+        let point3 = Point2D { x: 1.0, y: 1.0 };
         assert!(point1.within_distance(&point3, 1.5));
         assert!(!point1.within_distance(&point3, 1.4));
     }
 
     #[test]
     fn test_normalized() {
-        let point = Point { x: 3.0, y: 4.0 };
+        use super::Point2D as _;
+        use crate::kernelf64::Point2D;
+        use approx::abs_diff_eq;
+        let point = Point2D { x: 3.0, y: 4.0 };
         let normalized = point.normalized().unwrap();
 
         assert!(abs_diff_eq!(normalized.x(), 0.6, epsilon = 1e-10));
         assert!(abs_diff_eq!(normalized.y(), 0.8, epsilon = 1e-10));
 
-        let unit_point = Point { x: 1.0, y: 0.0 };
+        let unit_point = Point2D { x: 1.0, y: 0.0 };
         let normalized_unit = unit_point.normalized().unwrap();
 
         assert!(abs_diff_eq!(normalized_unit.x(), 1.0, epsilon = 1e-10));
         assert!(abs_diff_eq!(normalized_unit.y(), 0.0, epsilon = 1e-10));
 
-        let zero_point = Point { x: 0.0, y: 0.0 };
+        let zero_point = Point2D { x: 0.0, y: 0.0 };
         let normalized_zero = zero_point.normalized();
         assert!(normalized_zero.is_none());
     }
 
     #[test]
     fn test_on_segment() {
-        let a = Point { x: 0.0, y: 0.0 };
-        let b = Point { x: 4.0, y: 4.0 };
+        use super::Point2D as _;
+        use crate::kernelf64::Point2D;
+        use crate::kernelf64::Segment;
+        let a = Point2D { x: 0.0, y: 0.0 };
+        let b = Point2D { x: 4.0, y: 4.0 };
         let segment1 = Segment { start: a, end: b };
 
         // Test point on the segment
-        let p1 = Point { x: 2.0, y: 2.0 };
+        let p1 = Point2D { x: 2.0, y: 2.0 };
         assert!(p1.on_segment(&segment1));
 
         // Test point not on the segment
-        let p2 = Point { x: 3.0, y: 2.0 };
+        let p2 = Point2D { x: 3.0, y: 2.0 };
         assert!(!p2.on_segment(&segment1));
 
         // Test point at endpoint (should return false)
-        let p3 = Point { x: 0.0, y: 0.0 };
+        let p3 = Point2D { x: 0.0, y: 0.0 };
         assert!(!p3.on_segment(&segment1));
 
         // Test vertical line segment
-        let c = Point { x: 1.0, y: 0.0 };
-        let d = Point { x: 1.0, y: 4.0 };
+        let c = Point2D { x: 1.0, y: 0.0 };
+        let d = Point2D { x: 1.0, y: 4.0 };
         let segment2 = Segment { start: c, end: d };
-        let p4 = Point { x: 1.0, y: 2.0 };
+        let p4 = Point2D { x: 1.0, y: 2.0 };
         assert!(p4.on_segment(&segment2));
 
         // Test horizontal line segment
-        let e = Point { x: 0.0, y: 1.0 };
-        let f = Point { x: 4.0, y: 1.0 };
+        let e = Point2D { x: 0.0, y: 1.0 };
+        let f = Point2D { x: 4.0, y: 1.0 };
         let segment3 = Segment { start: e, end: f };
-        let p5 = Point { x: 2.0, y: 1.0 };
+        let p5 = Point2D { x: 2.0, y: 1.0 };
         assert!(p5.on_segment(&segment3));
 
         // Test point just outside the segment
-        let p6 = Point { x: 4.1, y: 4.1 };
+        let p6 = Point2D { x: 4.1, y: 4.1 };
         assert!(!p6.on_segment(&segment1));
+    }
+
+    #[test]
+    fn test_point_in_polygon() {
+        use super::Point2D as _;
+        use crate::kernelf64::{Point2D, Polygon};
+
+        // Create a square polygon
+        let square = Polygon {
+            vertices: vec![
+                Point2D { x: 0.0, y: 0.0 },
+                Point2D { x: 4.0, y: 0.0 },
+                Point2D { x: 4.0, y: 4.0 },
+                Point2D { x: 0.0, y: 4.0 },
+            ],
+            offset: Point2D { x: 0.0, y: 0.0 },
+        };
+
+        // Test point inside the polygon
+        let p1 = Point2D { x: 2.0, y: 2.0 };
+        assert_eq!(p1.in_polygon(&square), Some(true));
+
+        // Test point outside the polygon
+        let p2 = Point2D { x: 5.0, y: 5.0 };
+        assert_eq!(p2.in_polygon(&square), Some(false));
+
+        // Test point on the perimeter
+        let p3 = Point2D { x: 0.0, y: 2.0 };
+        assert_eq!(p3.in_polygon(&square), None);
+
+        // Test point on a vertex
+        let p4 = Point2D { x: 0.0, y: 0.0 };
+        assert_eq!(p4.in_polygon(&square), None);
+
+        // Create a triangle polygon
+        let triangle = Polygon {
+            vertices: vec![
+                Point2D { x: 0.0, y: 0.0 },
+                Point2D { x: 4.0, y: 0.0 },
+                Point2D { x: 2.0, y: 4.0 },
+            ],
+            offset: Point2D { x: 0.0, y: 0.0 },
+        };
+
+        // Test point inside the triangle
+        let p5 = Point2D { x: 2.0, y: 1.0 };
+        assert_eq!(p5.in_polygon(&triangle), Some(true));
+
+        // Test point outside the triangle
+        let p6 = Point2D { x: 3.0, y: 3.0 };
+        assert_eq!(p6.in_polygon(&triangle), Some(false));
+
+        // Test point on an edge of the triangle
+        let p7 = Point2D { x: 1.0, y: 2.0 };
+        assert_eq!(p7.in_polygon(&triangle), None);
+
+        // Test with a polygon that has less than 3 points (should return None)
+        let invalid_polygon = Polygon {
+            vertices: vec![Point2D { x: 0.0, y: 0.0 }, Point2D { x: 1.0, y: 1.0 }],
+            offset: Point2D { x: 0.0, y: 0.0 },
+        };
+        let p8 = Point2D { x: 0.5, y: 0.5 };
+        assert_eq!(p8.in_polygon(&invalid_polygon), None);
     }
 }

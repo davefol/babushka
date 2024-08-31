@@ -38,26 +38,32 @@ impl crate::segment::Segment for Segment {
     }
 }
 
-struct Polygon {
-    vertices: Vec<Point2D>,
-    offset: Point2D,
+pub struct Polygon {
+    pub vertices: Vec<Point2D>,
+    pub offset: Point2D,
 }
 
 impl crate::polygon::Polygon for Polygon {
     type Point = Point2D;
     type Segment = Segment;
-    fn iter_vertices(&self) -> std::slice::Iter<'_, Point2D> {
+    fn iter_vertices(&self) -> impl Iterator<Item = &<Self as crate::polygon::Polygon>::Point> {
         self.vertices.iter()
     }
-    fn iter_mut_vertices(&mut self) -> std::slice::IterMut<'_, Point2D> {
+    fn iter_mut_vertices(
+        &mut self,
+    ) -> impl Iterator<Item = &mut <Self as crate::polygon::Polygon>::Point> {
         self.vertices.iter_mut()
     }
 
     fn iter_segments(&self) -> impl Iterator<Item = Segment> {
-        self.vertices.windows(2).map(|window| Segment {
-            start: window[0],
-            end: window[1],
-        })
+        self.vertices
+            .iter()
+            .zip(self.vertices.iter().cycle().skip(1))
+            .take(self.vertices.len())
+            .map(|window| Segment {
+                start: *window.0,
+                end: *window.1,
+            })
     }
 
     fn offset(&self) -> &Self::Point {

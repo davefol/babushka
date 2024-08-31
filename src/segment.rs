@@ -79,12 +79,13 @@ pub trait Segment {
 }
 
 mod tests {
-    use approx::abs_diff_eq;
-    use super::{Point2D as _, Segment as _};
-    use crate::kernelf64::{Point2D, Segment};
-    
     #[test]
     fn test_segment_intersects_segment() {
+        use super::Segment as _;
+        use crate::kernelf64::Point2D;
+        use crate::kernelf64::Segment;
+        use crate::point::Point2D as _;
+        use approx::abs_diff_eq;
         let segment1 = Segment {
             start: Point2D { x: 0.0, y: 0.0 },
             end: Point2D { x: 5.0, y: 5.0 },
