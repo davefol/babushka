@@ -153,6 +153,59 @@ pub trait Point2D: Clone + Copy + Add<Self, Output = Self> {
 
         Some(inside)
     }
+
+    /// Returns the distance from the point to the line segment.
+    /// Distance is along the normal direction. 
+    /// Distance is negative if the point is behind the line segment.
+    /// If the point is on the line segment, it returns None.
+    fn distance_to_segment<T: Segment<Point = Self>>(
+        &self,
+        segment: &T,
+        normal: Self,
+        infinite: bool,
+    ) -> Option<Self::Value> {
+        let normal = normal.normalized();
+        if let Some(normal) = normal {
+            let mut dir = normal.clone();
+            dir.set_x(normal.y());
+            dir.set_y(-normal.x());
+
+            let pdot = self.x() * dir.x() + self.y() * dir.y();
+            let s1dot = segment.start().x() * dir.x() + segment.start().y() * dir.y();
+            let s2dot = segment.end().x() * dir.x() + segment.end().y() * dir.y();
+
+            let pdotnorm = self.x() * normal.x() + self.y() * normal.y();
+            let s1dotnorm = segment.start().x() * normal.x() + segment.start().y() * normal.y();
+            let s2dotnorm = segment.end().x() * normal.x() + segment.end().y() * normal.y();
+
+            if !infinite {
+                if ((pdot < s1dot || abs_diff_eq!(pdot, s1dot))
+                    && (pdot < s2dot || abs_diff_eq!(pdot, s2dot)))
+                    || ((pdot > s1dot || abs_diff_eq!(pdot, s1dot))
+                        && (pdot > s2dot || abs_diff_eq!(pdot, s2dot)))
+                {
+                    return None; // point doesn't collide with segment, or lies directly on the vertex
+                }
+                if (abs_diff_eq!(pdot, s1dot) && abs_diff_eq!(pdot, s2dot))
+                    && (pdotnorm > s1dotnorm && pdotnorm > s2dotnorm)
+                {
+                    return Some((pdotnorm - s1dotnorm).min(pdotnorm - s2dotnorm));
+                }
+                if (abs_diff_eq!(pdot, s1dot) && abs_diff_eq!(pdot, s2dot))
+                    && (pdotnorm < s1dotnorm && pdotnorm < s2dotnorm)
+                {
+                    return Some(-(s1dotnorm - pdotnorm).min(s2dotnorm - pdotnorm));
+                }
+            }
+
+            Some(
+                -(pdotnorm - s1dotnorm
+                    + (s1dotnorm - s2dotnorm) * (s1dot - pdot) / (s1dot - s2dot)),
+            )
+        } else {
+            None
+        }
+    }
 }
 
 mod tests {
@@ -295,5 +348,83 @@ mod tests {
         };
         let p8 = Point2D { x: 0.5, y: 0.5 };
         assert_eq!(p8.in_polygon(&invalid_polygon), None);
+    }
+
+    #[test]
+    fn test_point_distance_to_segment() {
+        use super::Point2D as _;
+        use crate::kernelf64::{Point2D, Segment};
+        use approx::abs_diff_eq;
+
+        let segment = Segment {
+            start: Point2D { x: 0.0, y: 0.0 },
+            end: Point2D { x: 4.0, y: 4.0 },
+        };
+
+        let normal = Point2D { x: -1.0, y: 1.0 };
+
+        // Test point on the segment
+        let p1 = Point2D { x: 2.0, y: 2.0 };
+        let distance1 = p1.distance_to_segment(&segment, normal, false);
+        assert!(distance1.is_some());
+        assert!(abs_diff_eq!(distance1.unwrap(), 0.0, epsilon = 1e-10));
+
+        // Test point off the segment, but intersecting when extended
+        let p2 = Point2D { x: -1.0, y: -1.0 };
+        let distance2 = p2.distance_to_segment(&segment, normal, false);
+        assert!(distance2.is_none());
+
+        // Test point off the segment, intersecting when extended (infinite = true)
+        let distance2_infinite = p2.distance_to_segment(&segment, normal, true);
+        assert!(distance2_infinite.is_some());
+        assert!(abs_diff_eq!(
+            distance2_infinite.unwrap(),
+            0.0,
+            epsilon = 1e-10
+        ), "Expected: {}, Got: {}", -2.0_f64.sqrt(), distance2_infinite.unwrap());
+
+        // Test point not on the line of the segment
+        let p3 = Point2D { x: 0.0, y: 2.0 };
+        let distance3 = p3.distance_to_segment(&segment, normal, false);
+        assert!(distance3.is_some());
+        assert!(abs_diff_eq!(
+            distance3.unwrap(),
+            -2.0_f64.sqrt(),
+            epsilon = 1e-10
+        ));
+
+        // Test point at the start of the segment
+        let p4 = Point2D { x: 0.0, y: 0.0 };
+        let distance4 = p4.distance_to_segment(&segment, normal, false);
+        assert!(distance4.is_none());
+
+        // Test point at the end of the segment
+        let p5 = Point2D { x: 4.0, y: 4.0 };
+        let distance5 = p5.distance_to_segment(&segment, normal, false);
+        assert!(distance5.is_none());
+
+        // Test with a vertical segment
+        let vertical_segment = Segment {
+            start: Point2D { x: 2.0, y: 0.0 },
+            end: Point2D { x: 2.0, y: 4.0 },
+        };
+        let vertical_normal = Point2D { x: 1.0, y: 0.0 };
+
+        let p6 = Point2D { x: 3.0, y: 2.0 };
+        let distance6 = p6.distance_to_segment(&vertical_segment, vertical_normal, false);
+        assert!(distance6.is_some());
+        assert!(abs_diff_eq!(distance6.unwrap(), -1.0, epsilon = 1e-10), "Expected: {}, Got: {}", -1.0, distance6.unwrap());
+
+        // Test with a horizontal segment
+        let horizontal_segment = Segment {
+            start: Point2D { x: 0.0, y: 2.0 },
+            end: Point2D { x: 4.0, y: 2.0 },
+        };
+        let horizontal_normal = Point2D { x: 0.0, y: 1.0 };
+
+        let p7 = Point2D { x: 2.0, y: 1.0 };
+        let distance7 = p7.distance_to_segment(&horizontal_segment, horizontal_normal, false);
+        assert!(distance7.is_some());
+        assert!(abs_diff_eq!(distance7.unwrap(), 1.0, epsilon = 1e-10));
     }
 }
