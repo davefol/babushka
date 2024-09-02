@@ -2,8 +2,8 @@ use crate::bounding_box::BoundingBox;
 use crate::point::Point2D;
 use crate::segment::Segment;
 use approx::abs_diff_eq;
-use num_traits::{Float, One};
 use itertools::Itertools;
+use num_traits::{Float, One, Zero};
 
 pub trait Polygon: Clone {
     type Point: Point2D;
@@ -75,6 +75,7 @@ pub trait Polygon: Clone {
     }
 
     /// Returns the bounding box of the polygon after any transformations.
+    /// BoundingBox<Self::Point::Value>
     fn bounding_box(&self) -> BoundingBox<<<Self as Polygon>::Point as Point2D>::Value> {
         let bounding_box_local = self.bounding_box_local();
         let min_x = bounding_box_local.min_x + self.offset().x();
@@ -128,8 +129,14 @@ pub trait Polygon: Clone {
             / two
     }
 
-    fn intersects_polygon(&self, other: &Self) -> bool where Self: Sized {
-        for ((s00, s01, s02), (s10, s11, s12)) in self.iter_poly_segments_3().cartesian_product(other.iter_poly_segments_3()) {
+    fn intersects_polygon(&self, other: &Self) -> bool
+    where
+        Self: Sized,
+    {
+        for ((s00, s01, s02), (s10, s11, s12)) in self
+            .iter_poly_segments_3()
+            .cartesian_product(other.iter_poly_segments_3())
+        {
             let a0 = s00.start();
             let a1 = s01.start();
             let a2 = s01.end();
@@ -145,9 +152,8 @@ pub trait Polygon: Clone {
                 let b2in = b2.in_polygon(self).unwrap_or(false);
                 if b0in && !b2in || !b0in && b2in {
                     return true;
-                }
-                else {
-                    continue
+                } else {
+                    continue;
                 }
             }
 
@@ -156,9 +162,8 @@ pub trait Polygon: Clone {
                 let b3in = b3.in_polygon(self).unwrap_or(false);
                 if b1in && !b3in || !b1in && b3in {
                     return true;
-                }
-                else {
-                    continue
+                } else {
+                    continue;
                 }
             }
 
@@ -167,9 +172,8 @@ pub trait Polygon: Clone {
                 let a2in = a2.in_polygon(other).unwrap_or(false);
                 if a0in && !a2in || !a0in && a2in {
                     return true;
-                }
-                else {
-                    continue
+                } else {
+                    continue;
                 }
             }
 
@@ -178,9 +182,8 @@ pub trait Polygon: Clone {
                 let a3in = a3.in_polygon(other).unwrap_or(false);
                 if a1in && !a3in || !a1in && a3in {
                     return true;
-                }
-                else {
-                    continue
+                } else {
+                    continue;
                 }
             }
 
@@ -189,6 +192,44 @@ pub trait Polygon: Clone {
             }
         }
         false
+    }
+
+    fn slide_distance_on_polygon(
+        &self,
+        other: &Self,
+        direction: Self::Point,
+        ignore_negative: bool,
+    ) -> Option<<<Self as Polygon>::Point as Point2D>::Value> {
+        let Some(dir) = direction.normalized() else {
+            return None;
+        };
+        let mut distance = None;
+        for (a, b) in self
+            .iter_segments()
+            .cartesian_product(other.iter_segments())
+        {
+            // ignore very small segments
+            if (abs_diff_eq!(a.start().x(), a.end().x())
+                && abs_diff_eq!(a.start().y(), a.end().y()))
+                || (abs_diff_eq!(b.start().x(), b.end().x())
+                    && abs_diff_eq!(b.start().y(), b.end().y()))
+            {
+                continue;
+            }
+
+            let d = a.distance_to_segment_along_direction(&b, dir);
+            if let Some(d) = d {
+                if distance.is_none() || d < distance.unwrap() {
+                    if !ignore_negative
+                        || d > <<Self as Polygon>::Point as Point2D>::Value::zero()
+                        || abs_diff_eq!(d, <<Self as Polygon>::Point as Point2D>::Value::zero())
+                    {
+                        distance = Some(d);
+                    }
+                }
+            }
+        }
+        distance
     }
 }
 
@@ -383,6 +424,5 @@ mod tests {
         // Test non-intersecting polygons
         assert!(!square3.intersects_polygon(&square4));
         assert!(!square4.intersects_polygon(&square3));
-
     }
 }
