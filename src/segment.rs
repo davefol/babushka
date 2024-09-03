@@ -352,7 +352,6 @@ mod tests {
         use super::Segment as _;
         use crate::kernelf64::Point2D;
         use crate::kernelf64::Segment;
-        use crate::point::Point2D as _;
 
         // test segments that will merely touch at one point
         //   | segment 2

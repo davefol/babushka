@@ -17,12 +17,20 @@ impl crate::point::Point2D for Point2D {
         self.y
     }
 
+    fn from_xy(x: Self::Value, y: Self::Value) -> Self {
+        Self { x, y }
+    }
+
     fn set_x(&mut self, x: Self::Value) {
         self.x = x;
     }
 
     fn set_y(&mut self, y: Self::Value) {
         self.y = y;
+    }
+
+    fn zero() -> Self {
+        Self { x: 0.0, y: 0.0 }
     }
 }
 
@@ -67,18 +75,38 @@ pub struct Polygon {
     pub offset: Point2D,
 }
 
+impl Polygon {
+    pub fn iter_mut_vertices_local(
+        &mut self,
+    ) -> impl Iterator<Item = &mut <Self as crate::polygon::Polygon>::Point> {
+        self.vertices.iter_mut()
+    }
+}
+
+impl<I> From<I> for Polygon 
+where I: IntoIterator<Item = <Self as crate::polygon::Polygon>::Point>
+{
+    /// Creates a new polygon from an iterator over vertices.
+    /// Vertices should be in order, clockwise for positive area
+    /// and counter-clockwise for negative area.
+    /// Vertices should have no offset.
+    /// Do not repeat the first vertex at the end.
+    fn from(vertices: I) -> Self {
+        Self {
+                vertices: vertices.into_iter().collect(),
+                offset: Point2D { x: 0.0, y: 0.0 },
+            }
+    }
+}
+
 impl crate::polygon::Polygon for Polygon {
     type Point = Point2D;
     type Segment = Segment;
+
     fn iter_vertices_local(
         &self,
     ) -> impl Iterator<Item = &<Self as crate::polygon::Polygon>::Point> {
         self.vertices.iter()
-    }
-    fn iter_mut_vertices_local(
-        &mut self,
-    ) -> impl Iterator<Item = &mut <Self as crate::polygon::Polygon>::Point> {
-        self.vertices.iter_mut()
     }
 
     fn iter_segments_local(&self) -> impl Iterator<Item = Segment> + Clone {
@@ -92,8 +120,8 @@ impl crate::polygon::Polygon for Polygon {
             })
     }
 
-    fn offset(&self) -> &Self::Point {
-        &self.offset
+    fn offset(&self) -> Self::Point {
+        self.offset
     }
 
     fn set_offset(&mut self, offset: Self::Point) {

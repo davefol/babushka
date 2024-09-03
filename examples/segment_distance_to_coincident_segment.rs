@@ -55,8 +55,8 @@ fn main() {
 
         // Translate segment2 horizontally
         translation += TRANSLATION_SPEED;
-        segment2.start.x = 4.0 + translation.sin() * 2.0;
-        segment2.end.x = 4.0 + translation.sin() * 2.0;
+        segment2.start.x = 2.0 + translation.sin() * 2.0;
+        segment2.end.x = 2.0 + translation.sin() * 2.0;
     }
 }
 

@@ -9,19 +9,17 @@ pub trait Polygon: Clone {
     type Point: Point2D;
     type Segment: Segment<Point = Self::Point>;
 
+
     /// Returns an in order iterator over the vertices of the polygon.
     /// Coordinates are local to the polygon
     fn iter_vertices_local(&self) -> impl Iterator<Item = &Self::Point>;
-
-    /// Returns an in order iterator over mutable vertices of the polygon.
-    fn iter_mut_vertices_local(&mut self) -> impl Iterator<Item = &mut Self::Point>;
 
     /// Returns an in order iterator over the segments of the polygon.
     /// Coordinates are local to the polygon
     fn iter_segments_local(&self) -> impl Iterator<Item = Self::Segment> + Clone;
 
     /// Returns the offset of the polygon.
-    fn offset(&self) -> &Self::Point;
+    fn offset(&self) -> Self::Point;
 
     /// Sets the offset of the polygon.
     fn set_offset(&mut self, offset: Self::Point);
@@ -33,14 +31,14 @@ pub trait Polygon: Clone {
     /// Coordinates are after any transformations to the polygon.
     fn iter_vertices(&self) -> impl Iterator<Item = Self::Point> {
         self.iter_vertices_local()
-            .map(|vertex| *vertex + *self.offset())
+            .map(|vertex| *vertex + self.offset())
     }
 
     /// Returns an inorder iterator over the segments of the polygon.
     /// Coordinates are after any transformations to the polygon.
     fn iter_segments(&self) -> impl Iterator<Item = Self::Segment> + Clone {
         self.iter_segments_local()
-            .map(|segment| segment + *self.offset())
+            .map(|segment| segment + self.offset())
     }
 
     fn iter_poly_segments_3(
@@ -87,18 +85,6 @@ pub trait Polygon: Clone {
             min_y,
             max_x,
             max_y,
-        }
-    }
-
-    /// Translates the vertices of the polygon before any transformations.
-    fn translate_local(
-        &mut self,
-        dx: <<Self as Polygon>::Point as Point2D>::Value,
-        dy: <<Self as Polygon>::Point as Point2D>::Value,
-    ) {
-        for vertex in self.iter_mut_vertices_local() {
-            vertex.set_x(vertex.x() + dx);
-            vertex.set_y(vertex.y() + dy);
         }
     }
 
@@ -198,7 +184,6 @@ pub trait Polygon: Clone {
         &self,
         other: &Self,
         direction: Self::Point,
-        ignore_negative: bool,
     ) -> Option<<<Self as Polygon>::Point as Point2D>::Value> {
         let Some(dir) = direction.normalized() else {
             return None;
@@ -220,8 +205,7 @@ pub trait Polygon: Clone {
             let d = a.distance_to_segment_along_direction(&b, dir);
             if let Some(d) = d {
                 if distance.is_none() || d < distance.unwrap() {
-                    if !ignore_negative
-                        || d > <<Self as Polygon>::Point as Point2D>::Value::zero()
+                    if d > <<Self as Polygon>::Point as Point2D>::Value::zero()
                         || abs_diff_eq!(d, <<Self as Polygon>::Point as Point2D>::Value::zero())
                     {
                         distance = Some(d);
@@ -231,6 +215,41 @@ pub trait Polygon: Clone {
         }
         distance
     }
+
+    /// project all points of other onto this polygon and return min distance
+    fn project_distance_on_polygon(
+        &self,
+        other: &Self,
+        direction: Self::Point,
+    ) -> Option<<<Self as Polygon>::Point as Point2D>::Value> {
+        let mut min_projection = None;
+        let mut distance = None;
+        for (p, s) in self
+            .iter_vertices()
+            .cartesian_product(other.iter_segments())
+        {
+            if ((s.end().y() - s.start().y()) * direction.x()
+                - (s.end().x() - s.start().x()) * direction.y())
+            .abs()
+                < <<Self as Polygon>::Point as Point2D>::Value::epsilon()
+            {
+                continue;
+            }
+
+            let d = p.distance_to_segment(&s, direction, false);
+            if d.is_some() && (min_projection.is_none() || d.unwrap() < min_projection.unwrap()) {
+                min_projection = d;
+            }
+        }
+
+        if min_projection.is_some()
+            && (distance.is_none() || min_projection.unwrap() > distance.unwrap())
+        {
+            distance = min_projection;
+        }
+        distance
+    }
+
 }
 
 mod tests {
@@ -424,5 +443,84 @@ mod tests {
         // Test non-intersecting polygons
         assert!(!square3.intersects_polygon(&square4));
         assert!(!square4.intersects_polygon(&square3));
+    }
+
+    #[test]
+    fn test_polygon_slide_distance_on_polygon() {
+        use super::Polygon as _;
+        use crate::kernelf64::{Point2D, Polygon};
+
+        // Create two polygons
+        let polygon1 = Polygon {
+            vertices: vec![
+                Point2D { x: 0.0, y: 0.0 },
+                Point2D { x: 0.0, y: 1.0 },
+                Point2D { x: 1.0, y: 1.0 },
+                Point2D { x: 1.0, y: 0.0 },
+            ],
+            offset: Point2D { x: 0.0, y: 0.0 },
+        };
+        let mut polygon2 = polygon1.clone();
+        polygon2.translate(-2.0, 0.0);
+
+        // Test slide distance in different directions
+        let direction_right = Point2D { x: 1.0, y: 0.0 };
+        let distance_right = polygon1.slide_distance_on_polygon(&polygon2, direction_right);
+        assert!(distance_right.is_some());
+        assert_eq!(distance_right.unwrap(), 1.0);
+
+        let direction_left = Point2D { x: -1.0, y: 0.0 };
+        let distance_left = polygon2.slide_distance_on_polygon(&polygon1, direction_left);
+        assert!(distance_left.is_some());
+        assert_eq!(distance_left.unwrap(), 1.0);
+
+        let direction_up = Point2D { x: 0.0, y: 1.0 };
+        let distance_up = polygon1.slide_distance_on_polygon(&polygon2, direction_up);
+        assert!(distance_up.is_none());
+
+        let direction_down = Point2D { x: 0.0, y: -1.0 };
+        let distance_down = polygon2.slide_distance_on_polygon(&polygon1, direction_down);
+        assert!(distance_down.is_none());
+
+        let direction_left_ignore = Point2D { x: -1.0, y: 0.0 };
+        let distance_left_ignore =
+            polygon1.slide_distance_on_polygon(&polygon2, direction_left_ignore);
+        assert!(distance_left_ignore.is_none());
+    }
+
+    #[test]
+    fn test_polygon_project_distance_on_polygon() {
+        use super::Polygon as _;
+        use crate::kernelf64::{Point2D, Polygon};
+
+        // Create two polygons
+        let polygon1 = Polygon {
+            vertices: vec![
+                Point2D { x: 0.0, y: 0.0 },
+                Point2D { x: 0.0, y: 2.0 },
+                Point2D { x: 2.0, y: 2.0 },
+                Point2D { x: 2.0, y: 0.0 },
+            ],
+            offset: Point2D { x: 0.0, y: 0.0 },
+        };
+        let mut polygon2 = polygon1.clone();
+        polygon2.translate(3.0, 1.0);
+
+        // Test project distance in different directions
+        let direction_left = Point2D { x: -1.0, y: 0.0 };
+        let distance_left = polygon1.project_distance_on_polygon(&polygon2, direction_left);
+        assert_eq!(distance_left, Some(-5.0));
+
+        let direction_right = Point2D { x: 1.0, y: 0.0 };
+        let distance_right = polygon2.project_distance_on_polygon(&polygon1, direction_right);
+        assert_eq!(distance_right, Some(-5.0));
+
+        let direction_up = Point2D { x: 0.0, y: 1.0 };
+        let distance_up = polygon1.project_distance_on_polygon(&polygon2, direction_up);
+        assert_eq!(distance_up, None);
+
+        let direction_down = Point2D { x: 0.0, y: -1.0 };
+        let distance_down = polygon2.project_distance_on_polygon(&polygon1, direction_down);
+        assert_eq!(distance_down, None);
     }
 }

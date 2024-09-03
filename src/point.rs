@@ -7,10 +7,13 @@ use crate::polygon::Polygon;
 use crate::segment::Segment;
 
 pub trait Point2D: Clone + Copy + Add<Self, Output = Self> {
-    type Value: Float + AbsDiffEq + Copy + Sum;
+    type Value: Float + AbsDiffEq + Copy + Sum + std::fmt::Debug;
 
     fn x(&self) -> Self::Value;
     fn y(&self) -> Self::Value;
+    fn from_xy(x: Self::Value, y: Self::Value) -> Self;
+
+    fn zero() -> Self;
 
     fn set_x(&mut self, x: Self::Value);
     fn set_y(&mut self, y: Self::Value);
