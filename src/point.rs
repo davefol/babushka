@@ -6,7 +6,7 @@ use std::ops::{Add, Neg, Sub};
 use crate::polygon::Polygon;
 use crate::segment::Segment;
 
-pub trait Point2D: Clone + Copy + Add<Self, Output = Self> + Sub<Self, Output = Self> + Neg<Output = Self> + Zero {
+pub trait Point2D: Clone + Copy + Add<Self, Output = Self> + Sub<Self, Output = Self> + Neg<Output = Self> + Zero + AbsDiffEq {
     type Value: Float + AbsDiffEq + Copy + Sum + std::fmt::Debug;
 
     fn x(&self) -> Self::Value;

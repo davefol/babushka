@@ -1,4 +1,5 @@
 use std::ops::{Add, Neg, Sub};
+use approx::AbsDiffEq;
 use num_traits::Zero;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -71,5 +72,16 @@ impl Zero for Point2D {
 
     fn is_zero(&self) -> bool {
         self.x == 0.0 && self.y == 0.0
+    }
+}
+
+impl AbsDiffEq<Point2D> for Point2D {
+    type Epsilon = f64; 
+    fn abs_diff_eq(&self, other: &Point2D, epsilon: Self::Epsilon) -> bool {
+        self.x.abs_diff_eq(&other.x, epsilon) && self.y.abs_diff_eq(&other.y, epsilon)
+    }
+
+    fn default_epsilon() -> Self::Epsilon {
+        f64::default_epsilon()
     }
 }
