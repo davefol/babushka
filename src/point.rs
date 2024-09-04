@@ -1,26 +1,27 @@
 use approx::{abs_diff_eq, AbsDiffEq};
 use num_traits::{Float, One, Zero};
 use std::iter::Sum;
-use std::ops::{Add, Sub};
-use std::process::Output;
+use std::ops::{Add, Neg, Sub};
 
 use crate::polygon::Polygon;
 use crate::segment::Segment;
 
-pub trait Point2D: Clone + Copy + Add<Self, Output = Self> + Sub<Self, Output = Self> {
+pub trait Point2D: Clone + Copy + Add<Self, Output = Self> + Sub<Self, Output = Self> + Neg<Output = Self> + Zero {
     type Value: Float + AbsDiffEq + Copy + Sum + std::fmt::Debug;
 
     fn x(&self) -> Self::Value;
     fn y(&self) -> Self::Value;
     fn from_xy(x: Self::Value, y: Self::Value) -> Self;
 
-    fn zero() -> Self;
-
     fn set_x(&mut self, x: Self::Value);
     fn set_y(&mut self, y: Self::Value);
 
     fn epsilon() -> Self::Value {
         Self::Value::epsilon()
+    }
+
+    fn dot(&self, other : &Self) -> Self::Value {
+        self.x() * other.x() + self.y() * other.y()
     }
 
     /// Returns true if the point is within the given distance of the other point.

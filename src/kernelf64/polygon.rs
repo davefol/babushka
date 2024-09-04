@@ -65,27 +65,11 @@ impl crate::polygon::Polygon for Polygon {
     }
 }
 
-impl ComputeNoFitPolygon for (Polygon, Vec<bool>) {
-    type Polygon = Polygon;
-    fn polygon(&self) -> &Self::Polygon {
-        &self.0
-    }
-    fn polygon_mut(&mut self) -> &mut Self::Polygon {
-        &mut self.0
-    }
+impl ComputeNoFitPolygon for Polygon {
     fn get_vertex(
         &self,
         index: usize,
-    ) -> <<Self as ComputeNoFitPolygon>::Polygon as crate::polygon::Polygon>::Point {
-        self.0.vertices[index]
-    }
-    fn is_vertex_marked(&self, index: usize) -> bool {
-        self.1[index]
-    }
-    fn mark_vertex(&mut self, index: usize) {
-        self.1[index] = true;
-    }
-    fn unmark_vertex(&mut self, index: usize) {
-        self.1[index] = false;
+    ) -> <Self as crate::polygon::Polygon>::Point {
+        self.vertices[index] + self.offset
     }
 }

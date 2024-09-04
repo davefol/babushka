@@ -1,4 +1,5 @@
-use std::ops::{Add, Sub};
+use std::ops::{Add, Neg, Sub};
+use num_traits::Zero;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Point2D {
@@ -29,9 +30,7 @@ impl crate::point::Point2D for Point2D {
         self.y = y;
     }
 
-    fn zero() -> Self {
-        Self { x: 0.0, y: 0.0 }
-    }
+
 }
 
 impl Add for Point2D {
@@ -51,5 +50,26 @@ impl Sub for Point2D {
             x: self.x - other.x,
             y: self.y - other.y,
         }
+    }
+}
+
+impl Neg for Point2D {
+    type Output = Self;
+    fn neg(self) -> Self::Output {
+        Self {
+            x: -self.x,
+            y: -self.y,
+        }
+    }
+}
+
+
+impl Zero for Point2D {
+    fn zero() -> Self {
+        Self { x: 0.0, y: 0.0 }
+    }
+
+    fn is_zero(&self) -> bool {
+        self.x == 0.0 && self.y == 0.0
     }
 }
