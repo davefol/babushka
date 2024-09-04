@@ -1,0 +1,27 @@
+use std::ops::Add;
+use super::Point2D;
+
+#[derive(Clone, Copy)]
+pub struct Segment {
+    pub start: Point2D,
+    pub end: Point2D,
+}
+impl crate::segment::Segment for Segment {
+    type Point = Point2D;
+    fn start(&self) -> &Self::Point {
+        &self.start
+    }
+    fn end(&self) -> &Self::Point {
+        &self.end
+    }
+}
+
+impl Add<Point2D> for Segment {
+    type Output = Self;
+    fn add(self, other: Point2D) -> Self::Output {
+        Self {
+            start: self.start + other,
+            end: self.end + other,
+        }
+    }
+}
