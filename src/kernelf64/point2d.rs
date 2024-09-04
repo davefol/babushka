@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::ops::{Add, Sub};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Point2D {
@@ -40,6 +40,16 @@ impl Add for Point2D {
         Self {
             x: self.x + other.x,
             y: self.y + other.y,
+        }
+    }
+}
+
+impl Sub for Point2D {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self::Output {
+        Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
         }
     }
 }

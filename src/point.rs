@@ -1,12 +1,13 @@
 use approx::{abs_diff_eq, AbsDiffEq};
 use num_traits::{Float, One, Zero};
 use std::iter::Sum;
-use std::ops::Add;
+use std::ops::{Add, Sub};
+use std::process::Output;
 
 use crate::polygon::Polygon;
 use crate::segment::Segment;
 
-pub trait Point2D: Clone + Copy + Add<Self, Output = Self> {
+pub trait Point2D: Clone + Copy + Add<Self, Output = Self> + Sub<Self, Output = Self> {
     type Value: Float + AbsDiffEq + Copy + Sum + std::fmt::Debug;
 
     fn x(&self) -> Self::Value;

@@ -1,4 +1,5 @@
 use super::{Point2D, Segment};
+use crate::no_fit_polygon::ComputeNoFitPolygon;
 #[derive(Clone, Debug)]
 pub struct Polygon {
     pub vertices: Vec<Point2D>,
@@ -13,8 +14,9 @@ impl Polygon {
     }
 }
 
-impl<I> From<I> for Polygon 
-where I: IntoIterator<Item = <Self as crate::polygon::Polygon>::Point>
+impl<I> From<I> for Polygon
+where
+    I: IntoIterator<Item = <Self as crate::polygon::Polygon>::Point>,
 {
     /// Creates a new polygon from an iterator over vertices.
     /// Vertices should be in order, clockwise for positive area
@@ -23,9 +25,9 @@ where I: IntoIterator<Item = <Self as crate::polygon::Polygon>::Point>
     /// Do not repeat the first vertex at the end.
     fn from(vertices: I) -> Self {
         Self {
-                vertices: vertices.into_iter().collect(),
-                offset: Point2D { x: 0.0, y: 0.0 },
-            }
+            vertices: vertices.into_iter().collect(),
+            offset: Point2D { x: 0.0, y: 0.0 },
+        }
     }
 }
 
@@ -60,5 +62,30 @@ impl crate::polygon::Polygon for Polygon {
 
     fn length(&self) -> usize {
         self.vertices.len()
+    }
+}
+
+impl ComputeNoFitPolygon for (Polygon, Vec<bool>) {
+    type Polygon = Polygon;
+    fn polygon(&self) -> &Self::Polygon {
+        &self.0
+    }
+    fn polygon_mut(&mut self) -> &mut Self::Polygon {
+        &mut self.0
+    }
+    fn get_vertex(
+        &self,
+        index: usize,
+    ) -> <<Self as ComputeNoFitPolygon>::Polygon as crate::polygon::Polygon>::Point {
+        self.0.vertices[index]
+    }
+    fn is_vertex_marked(&self, index: usize) -> bool {
+        self.1[index]
+    }
+    fn mark_vertex(&mut self, index: usize) {
+        self.1[index] = true;
+    }
+    fn unmark_vertex(&mut self, index: usize) {
+        self.1[index] = false;
     }
 }
