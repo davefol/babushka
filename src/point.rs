@@ -6,7 +6,16 @@ use std::ops::{Add, Neg, Sub};
 use crate::polygon::Polygon;
 use crate::segment::Segment;
 
-pub trait Point2D: Clone + Copy + Add<Self, Output = Self> + Sub<Self, Output = Self> + Neg<Output = Self> + Zero + AbsDiffEq {
+pub trait Point2D:
+    Clone
+    + Copy
+    + Add<Self, Output = Self>
+    + Sub<Self, Output = Self>
+    + Neg<Output = Self>
+    + Zero
+    + AbsDiffEq
+    + std::fmt::Debug
+{
     type Value: Float + AbsDiffEq + Copy + Sum + std::fmt::Debug;
 
     fn x(&self) -> Self::Value;
@@ -20,7 +29,7 @@ pub trait Point2D: Clone + Copy + Add<Self, Output = Self> + Sub<Self, Output = 
         Self::Value::epsilon()
     }
 
-    fn dot(&self, other : &Self) -> Self::Value {
+    fn dot(&self, other: &Self) -> Self::Value {
         self.x() * other.x() + self.y() * other.y()
     }
 
@@ -160,7 +169,7 @@ pub trait Point2D: Clone + Copy + Add<Self, Output = Self> + Sub<Self, Output = 
     }
 
     /// Returns the distance from the point to the line segment.
-    /// Distance is along the normal direction. 
+    /// Distance is along the normal direction.
     /// Distance is negative if the point is behind the line segment.
     /// If the point is on the line segment, it returns None.
     fn distance_to_segment<T: Segment<Point = Self>>(
@@ -382,11 +391,12 @@ mod tests {
         // Test point off the segment, intersecting when extended (infinite = true)
         let distance2_infinite = p2.distance_to_segment(&segment, normal, true);
         assert!(distance2_infinite.is_some());
-        assert!(abs_diff_eq!(
-            distance2_infinite.unwrap(),
-            0.0,
-            epsilon = 1e-10
-        ), "Expected: {}, Got: {}", -2.0_f64.sqrt(), distance2_infinite.unwrap());
+        assert!(
+            abs_diff_eq!(distance2_infinite.unwrap(), 0.0, epsilon = 1e-10),
+            "Expected: {}, Got: {}",
+            -2.0_f64.sqrt(),
+            distance2_infinite.unwrap()
+        );
 
         // Test point not on the line of the segment
         let p3 = Point2D { x: 0.0, y: 2.0 };
@@ -418,7 +428,12 @@ mod tests {
         let p6 = Point2D { x: 3.0, y: 2.0 };
         let distance6 = p6.distance_to_segment(&vertical_segment, vertical_normal, false);
         assert!(distance6.is_some());
-        assert!(abs_diff_eq!(distance6.unwrap(), -1.0, epsilon = 1e-10), "Expected: {}, Got: {}", -1.0, distance6.unwrap());
+        assert!(
+            abs_diff_eq!(distance6.unwrap(), -1.0, epsilon = 1e-10),
+            "Expected: {}, Got: {}",
+            -1.0,
+            distance6.unwrap()
+        );
 
         // Test with a horizontal segment
         let horizontal_segment = Segment {

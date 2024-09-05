@@ -3,24 +3,34 @@ use crate::polygon::Polygon;
 use crate::segment::Segment;
 use approx::abs_diff_eq;
 use itertools::Itertools;
-use num_traits::{Float, One, Zero};
+use num_traits::{Float, Zero};
 
+#[derive(Debug)]
 enum TouchingType {
     A,
     B,
     C,
 }
 
+#[derive(Debug)]
 struct Touching {
     tt: TouchingType,
     a: usize,
     b: usize,
 }
 
+#[derive(Clone, Copy, Debug)]
+enum PolygonSource {
+    A,
+    B,
+}
+
+#[derive(Clone, Copy, Debug)]
 struct Vector<P> {
     point: P,
     start: usize,
     end: usize,
+    source: PolygonSource,
 }
 pub trait ComputeNoFitPolygon: Polygon {
     /// Return the vertex at the given index after transformations.
@@ -31,9 +41,10 @@ pub trait ComputeNoFitPolygon: Polygon {
         other: &Self,
         inside: bool,
         search_edges: bool,
-    ) -> Option<Vec<<Self as Polygon>::Point>> {
+    ) -> Option<Vec<Vec<<Self as Polygon>::Point>>> {
         // we will be mucking with the offset of other so clone it
         let mut other = other.clone();
+        other.set_offset(Zero::zero());
 
         // keep track of visited vertices
         let mut self_marked = vec![false; self.length()];
@@ -46,10 +57,11 @@ pub trait ComputeNoFitPolygon: Polygon {
             .clone();
 
         let max_other_by_y = other
-            .iter_vertices()
+            .iter_vertices_local()
             .max_by(|a, b| a.y().partial_cmp(&b.y()).unwrap())
             .unwrap()
             .clone();
+
 
         let mut start_point = if !inside {
             Some(min_self_by_y - max_other_by_y)
@@ -57,17 +69,19 @@ pub trait ComputeNoFitPolygon: Polygon {
             self.search_start_point(&other, &self_marked, true, None)
         };
 
-        let nfp_list = vec![];
+
+        let mut nfp_list = vec![];
 
         while let Some(current_start_point) = start_point {
             other.set_offset(current_start_point);
 
             // Touching Type, A index, B index
-            let mut touchings: Vec<Touching> = vec![];
+            let mut touchings: Vec<Touching>;
             let mut prev_vector = None::<Vector<<Self as Polygon>::Point>>;
-            let mut nfp: Vec<<Self as Polygon>::Point> = vec![other.get_vertex(0)];
+            let mut nfp: Option<Vec<<Self as Polygon>::Point>> = Some(vec![other.get_vertex(0)]);
 
             let mut reference = other.get_vertex(0);
+            println!("reference: {:?}", reference);
             let start = reference;
             let mut counter = 0;
 
@@ -157,41 +171,183 @@ pub trait ComputeNoFitPolygon: Polygon {
                                 point: prev_vertex_self - vertex_self,
                                 start: touching.a,
                                 end: prev_self_index,
+                                source: PolygonSource::A,
                             });
                             vectors.push(Vector {
                                 point: next_vertex_self - vertex_self,
                                 start: touching.a,
                                 end: next_self_index,
+                                source: PolygonSource::A,
                             });
 
                             // other's vectors need to be inverted
+                            // TODO: check if we need to actually localize the other polygon
                             vectors.push(Vector {
                                 point: vertex_other - prev_vertex_other,
                                 start: prev_other_index,
                                 end: touching.b,
+                                source: PolygonSource::B,
                             });
                             vectors.push(Vector {
                                 point: vertex_other - next_vertex_other,
                                 start: next_other_index,
                                 end: touching.b,
+                                source: PolygonSource::B,
                             });
                         }
                         TouchingType::B => {
                             vectors.push(Vector {
-                                point: vertex_self - vertex_b,
+                                point: vertex_self - vertex_other,
                                 start: touching.a,
                                 end: prev_self_index,
+                                source: PolygonSource::A,
                             });
                             vectors.push(Vector {
                                 point: next_vertex_self - vertex_self,
                                 start: touching.a,
                                 end: next_self_index,
+                                source: PolygonSource::A,
                             });
                         }
-                        TouchingType::C => {}
+                        TouchingType::C => {
+                            vectors.push(Vector {
+                                point: vertex_self - vertex_other,
+                                start: prev_other_index,
+                                end: touching.b,
+                                source: PolygonSource::B,
+                            });
+                            vectors.push(Vector {
+                                point: vertex_self - prev_vertex_other,
+                                start: touching.b,
+                                end: prev_other_index,
+                                source: PolygonSource::B,
+                            });
+                        }
                     }
                 }
+                let mut translate = None::<Vector<<Self as Polygon>::Point>>;
+                let mut max_d = <<Self as Polygon>::Point as Point2D>::Value::zero();
+
+                println!("prev_vector: {:?}", prev_vector);
+                for vector in vectors {
+                    if vector.point.is_zero() {
+                        continue;
+                    }
+
+                    // if this vector points us back to where we came from, ignore it.
+                    // ie cross product = 0 and dot product < 0
+                    if let Some(prev_vector) = &prev_vector {
+                        if prev_vector.point.dot(&vector.point) < Zero::zero() {
+                            // compare magnitude with unit vectors
+                            let vector_unit = vector.point.normalized().unwrap();
+                            let prev_unit = prev_vector.point.normalized().unwrap();
+
+                            if (vector_unit.y() * prev_unit.x() - vector_unit.x() * prev_unit.y())
+                                .abs()
+                                < Float::epsilon()
+                            {
+                                continue;
+                            }
+                        }
+                    }
+
+                    let mut d = self.slide_distance_on_polygon(&other, vector.point);
+                    let vector_d2 = vector.point.dot(&vector.point);
+
+                    if d.is_none() || d.unwrap() * d.unwrap() > vector_d2 {
+                        d = Some(vector_d2.sqrt());
+                    }
+
+                    if let Some(d) = d {
+                        if d > max_d {
+                            max_d = d;
+                            translate = Some(vector);
+                            println!("translate: {:?}", translate);
+                        }
+                    }
+                }
+
+                if translate.is_none() || abs_diff_eq!(max_d, Zero::zero()) {
+                    // didn't close the loop, something went wrong here
+                    println!("Something went wrong, didn't close the loop, translate: {:?}, max_d: {:?}", translate, max_d);
+                    nfp = None;
+                    break;
+                }
+                if let Some(translate) = &translate {
+                    match translate.source {
+                        PolygonSource::A => {
+                            self_marked[translate.start] = true;
+                            self_marked[translate.end] = true;
+                        }
+                        PolygonSource::B => {
+                            other_marked[translate.start] = true;
+                            other_marked[translate.end] = true;
+                        }
+                    }
+                }
+                prev_vector = translate;
+
+                // trim
+                let vector_length_2 = translate.unwrap().point.dot(&translate.unwrap().point);
+                if max_d * max_d < vector_length_2 && !abs_diff_eq!(max_d * max_d, vector_length_2)
+                {
+                    let scale = ((max_d * max_d) / vector_length_2).sqrt();
+                    translate = translate.map(|mut translate| {
+                        translate.point.set_x(translate.point.x() * scale);
+                        translate.point.set_y(translate.point.y() * scale);
+                        translate
+                    });
+                }
+
+                reference.set_x(reference.x() + translate.unwrap().point.x());
+                reference.set_y(reference.y() + translate.unwrap().point.y());
+
+                // we've made a full loop
+                println!("reference: {:?}", reference);
+                if abs_diff_eq!(reference, start) {
+                    println!("we've made a full loop");
+                    break;
+                }
+
+                // if self and other start on a touching horizontal line,
+                // the end point may not be the start point
+                let mut looped = false;
+
+                if let Some(nfp) = &nfp {
+                    if !nfp.is_empty() {
+                        for i in 0..nfp.len() - 1 {
+                            if abs_diff_eq!(reference, nfp[i]) {
+                                looped = true;
+                            }
+                        }
+                    }
+                }
+
+                if looped {
+                    break;
+                }
+
+                if let Some(nfp) = nfp.as_mut() {
+                    nfp.push(reference);
+                }
+
+                other.set_offset(other.offset() + translate.unwrap().point);
+
+                counter += 1;
             }
+
+            if let Some(nfp) = nfp {
+                if !nfp.is_empty() {
+                    nfp_list.push(nfp);
+                }
+            }
+
+            if !search_edges {
+                break;
+            }
+
+            start_point =
+                self.search_start_point(&other, &self_marked, inside, Some(nfp_list.clone()))
         }
 
         Some(nfp_list)
