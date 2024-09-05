@@ -131,6 +131,7 @@ pub trait ComputeNoFitPolygon: Polygon {
 
                 // generate translation vectors from touching vertices / edges
                 let mut vectors: Vec<Vector<<Self as Polygon>::Point>> = vec![];
+                println!("touchings: {:#?}", touchings);
                 for touching in touchings {
                     let vertex_self = self.get_vertex(touching.a);
                     self_marked[touching.a] = true;
@@ -251,19 +252,20 @@ pub trait ComputeNoFitPolygon: Polygon {
                         }
                     }
 
+                    // i think this should return 0 if a slide is not possible
                     let mut d = self.slide_distance_on_polygon(&other, vector.point);
                     let vector_d2 = vector.point.dot(&vector.point);
-                    println!("vector: {:?}, slide_distance: {:?}", vector, d);
 
                     if d.is_none() || d.unwrap() * d.unwrap() > vector_d2 {
                         d = Some(vector_d2.sqrt());
                     }
+                    println!("vector: {:?}, slide_distance: {:?}", vector, d);
 
                     if let Some(d) = d {
                         if d > max_d {
                             max_d = d;
                             translate = Some(vector);
-                            println!("translate: {:?}", translate);
+                            //println!("translate: {:?}", translate);
                         }
                     }
                 }
@@ -274,6 +276,7 @@ pub trait ComputeNoFitPolygon: Polygon {
                     nfp = None;
                     break;
                 }
+                println!("translate: {:?}", translate);
                 if let Some(translate) = &translate {
                     match translate.source {
                         PolygonSource::A => {
