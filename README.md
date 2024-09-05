@@ -2,14 +2,14 @@
 Babushka is a Rust library for 2D geometry algorithms, with a focus on efficient bin packing and nesting.
 
 ## Features
-TODO
+- No Fit Polygon implementation inspired by SVGNest
 
 ## Installation
 
 Add this to your `Cargo.toml`:
 
 [dependencies]
-babushka = "0.1.2"
+babushka = "0.1.5"
 
 
 ## Usage
