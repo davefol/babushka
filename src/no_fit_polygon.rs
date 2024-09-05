@@ -183,13 +183,13 @@ pub trait ComputeNoFitPolygon: Polygon {
                             // other's vectors need to be inverted
                             // TODO: check if we need to actually localize the other polygon
                             vectors.push(Vector {
-                                point: vertex_other - prev_vertex_other,
+                                point: vertex_other - prev_vertex_other,// - other.offset(),
                                 start: prev_other_index,
                                 end: touching.b,
                                 source: PolygonSource::B,
                             });
                             vectors.push(Vector {
-                                point: vertex_other - next_vertex_other,
+                                point: vertex_other - next_vertex_other,// - other.offset(),
                                 start: next_other_index,
                                 end: touching.b,
                                 source: PolygonSource::B,
@@ -198,14 +198,14 @@ pub trait ComputeNoFitPolygon: Polygon {
                         TouchingType::B => {
                             vectors.push(Vector {
                                 point: vertex_self - vertex_other,
-                                start: touching.a,
-                                end: prev_self_index,
+                                start: prev_self_index,
+                                end: touching.a,
                                 source: PolygonSource::A,
                             });
                             vectors.push(Vector {
-                                point: next_vertex_self - vertex_self,
+                                point: prev_vertex_self - vertex_self,
                                 start: touching.a,
-                                end: next_self_index,
+                                end: prev_self_index,
                                 source: PolygonSource::A,
                             });
                         }
@@ -253,6 +253,7 @@ pub trait ComputeNoFitPolygon: Polygon {
 
                     let mut d = self.slide_distance_on_polygon(&other, vector.point);
                     let vector_d2 = vector.point.dot(&vector.point);
+                    println!("vector: {:?}, slide_distance: {:?}", vector, d);
 
                     if d.is_none() || d.unwrap() * d.unwrap() > vector_d2 {
                         d = Some(vector_d2.sqrt());
