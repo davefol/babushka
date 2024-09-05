@@ -1,10 +1,8 @@
 use babushka::kernelf64::{Point2D, Segment};
-use babushka::segment::Segment as _;
 use babushka::point::Point2D as _;
-use font8x8::BASIC_FONTS;
+use babushka::segment::Segment as _;
 use font8x8::UnicodeFonts;
 use minifb::{Key, Window, WindowOptions};
-use std::f64::consts::PI;
 
 const WIDTH: usize = 800;
 const HEIGHT: usize = 600;
@@ -30,8 +28,14 @@ fn main() {
     };
 
     let mut segment2 = Segment {
-        start: Point2D { x: 4.0, y: 2.0 + 3.0 },
-        end: Point2D { x: 4.0, y: 6.0 + 3.0 },
+        start: Point2D {
+            x: 4.0,
+            y: 2.0 + 3.0,
+        },
+        end: Point2D {
+            x: 4.0,
+            y: 6.0 + 3.0,
+        },
     };
 
     let direction = Point2D { x: -1.0, y: 0.0 };

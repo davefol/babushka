@@ -5,10 +5,9 @@ use approx::abs_diff_eq;
 use itertools::Itertools;
 use num_traits::{Float, One, Zero};
 
-pub trait Polygon: Clone {
+pub trait Polygon: Clone + std::fmt::Debug {
     type Point: Point2D;
     type Segment: Segment<Point = Self::Point>;
-
 
     /// Returns an in order iterator over the vertices of the polygon.
     /// Coordinates are local to the polygon
@@ -184,6 +183,7 @@ pub trait Polygon: Clone {
         &self,
         other: &Self,
         direction: Self::Point,
+        ignore_negative: bool,
     ) -> Option<<<Self as Polygon>::Point as Point2D>::Value> {
         let Some(dir) = direction.normalized() else {
             return None;
@@ -194,20 +194,16 @@ pub trait Polygon: Clone {
             .cartesian_product(other.iter_segments())
         {
             // ignore very small segments
-            if (abs_diff_eq!(a.start().x(), a.end().x())
-                && abs_diff_eq!(a.start().y(), a.end().y()))
-                || (abs_diff_eq!(b.start().x(), b.end().x())
-                    && abs_diff_eq!(b.start().y(), b.end().y()))
-            {
+            if abs_diff_eq!(a.start(), a.end()) || abs_diff_eq!(b.start(), b.end()) {
                 continue;
             }
 
             let d = a.distance_to_segment_along_direction(&b, dir);
+
             if let Some(d) = d {
+                // if current distance is less than distance then update
                 if distance.is_none() || d < distance.unwrap() {
-                    if d > <<Self as Polygon>::Point as Point2D>::Value::zero()
-                        || abs_diff_eq!(d, <<Self as Polygon>::Point as Point2D>::Value::zero())
-                    {
+                    if !ignore_negative || d > Zero::zero() || abs_diff_eq!(d, Zero::zero()) {
                         distance = Some(d);
                     }
                 }
@@ -222,34 +218,34 @@ pub trait Polygon: Clone {
         other: &Self,
         direction: Self::Point,
     ) -> Option<<<Self as Polygon>::Point as Point2D>::Value> {
-        let mut min_projection = None;
         let mut distance = None;
-        for (p, s) in self
-            .iter_vertices()
-            .cartesian_product(other.iter_segments())
-        {
-            if ((s.end().y() - s.start().y()) * direction.x()
-                - (s.end().x() - s.start().x()) * direction.y())
-            .abs()
-                < <<Self as Polygon>::Point as Point2D>::Value::epsilon()
+        for other_vertex in other.iter_vertices() {
+            let mut min_projection = None;
+            for self_segment in self.iter_segments() {
+                if ((self_segment.end().y() - self_segment.start().y()) * direction.x()
+                    - (self_segment.end().x() - self_segment.start().x()) * direction.y())
+                    < Float::epsilon()
+                {
+                    continue;
+                }
+
+                // project point, ignore edge boundaries
+                let d = other_vertex.distance_to_segment(&self_segment, direction, false);
+
+                if d.is_some() && (min_projection.is_none() || d.unwrap() < min_projection.unwrap())
+                {
+                    min_projection = d;
+                }
+            }
+            if min_projection.is_some()
+                && (distance.is_none() || min_projection.unwrap() > distance.unwrap())
             {
-                continue;
-            }
-
-            let d = p.distance_to_segment(&s, direction, false);
-            if d.is_some() && (min_projection.is_none() || d.unwrap() < min_projection.unwrap()) {
-                min_projection = d;
+                distance = min_projection
             }
         }
 
-        if min_projection.is_some()
-            && (distance.is_none() || min_projection.unwrap() > distance.unwrap())
-        {
-            distance = min_projection;
-        }
         distance
     }
-
 }
 
 mod tests {
@@ -465,26 +461,26 @@ mod tests {
 
         // Test slide distance in different directions
         let direction_right = Point2D { x: 1.0, y: 0.0 };
-        let distance_right = polygon1.slide_distance_on_polygon(&polygon2, direction_right);
+        let distance_right = polygon1.slide_distance_on_polygon(&polygon2, direction_right, true);
         assert!(distance_right.is_some());
         assert_eq!(distance_right.unwrap(), 1.0);
 
         let direction_left = Point2D { x: -1.0, y: 0.0 };
-        let distance_left = polygon2.slide_distance_on_polygon(&polygon1, direction_left);
+        let distance_left = polygon2.slide_distance_on_polygon(&polygon1, direction_left, true);
         assert!(distance_left.is_some());
         assert_eq!(distance_left.unwrap(), 1.0);
 
         let direction_up = Point2D { x: 0.0, y: 1.0 };
-        let distance_up = polygon1.slide_distance_on_polygon(&polygon2, direction_up);
+        let distance_up = polygon1.slide_distance_on_polygon(&polygon2, direction_up, true);
         assert!(distance_up.is_none());
 
         let direction_down = Point2D { x: 0.0, y: -1.0 };
-        let distance_down = polygon2.slide_distance_on_polygon(&polygon1, direction_down);
+        let distance_down = polygon2.slide_distance_on_polygon(&polygon1, direction_down, true);
         assert!(distance_down.is_none());
 
         let direction_left_ignore = Point2D { x: -1.0, y: 0.0 };
         let distance_left_ignore =
-            polygon1.slide_distance_on_polygon(&polygon2, direction_left_ignore);
+            polygon1.slide_distance_on_polygon(&polygon2, direction_left_ignore, true);
         assert!(distance_left_ignore.is_none());
     }
 
@@ -509,11 +505,11 @@ mod tests {
         // Test project distance in different directions
         let direction_left = Point2D { x: -1.0, y: 0.0 };
         let distance_left = polygon1.project_distance_on_polygon(&polygon2, direction_left);
-        assert_eq!(distance_left, Some(-5.0));
+        assert_eq!(distance_left, Some(3.0));
 
         let direction_right = Point2D { x: 1.0, y: 0.0 };
         let distance_right = polygon2.project_distance_on_polygon(&polygon1, direction_right);
-        assert_eq!(distance_right, Some(-5.0));
+        assert_eq!(distance_right, Some(3.0));
 
         let direction_up = Point2D { x: 0.0, y: 1.0 };
         let distance_up = polygon1.project_distance_on_polygon(&polygon2, direction_up);

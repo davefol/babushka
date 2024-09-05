@@ -1,5 +1,5 @@
-use std::ops::Add;
 use super::Point2D;
+use std::ops::Add;
 
 #[derive(Clone, Copy)]
 pub struct Segment {

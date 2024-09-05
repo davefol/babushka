@@ -51,7 +51,7 @@ pub trait ComputeNoFitPolygon: Polygon {
         let mut other_marked = vec![false; other.length()];
 
         let min_self_by_y = self
-            .iter_vertices_local()
+            .iter_vertices()
             .min_by(|a, b| a.y().partial_cmp(&b.y()).unwrap())
             .unwrap()
             .clone();
@@ -62,13 +62,11 @@ pub trait ComputeNoFitPolygon: Polygon {
             .unwrap()
             .clone();
 
-
         let mut start_point = if !inside {
             Some(min_self_by_y - max_other_by_y)
         } else {
             self.search_start_point(&other, &self_marked, true, None)
         };
-
 
         let mut nfp_list = vec![];
 
@@ -81,7 +79,6 @@ pub trait ComputeNoFitPolygon: Polygon {
             let mut nfp: Option<Vec<<Self as Polygon>::Point>> = Some(vec![other.get_vertex(0)]);
 
             let mut reference = other.get_vertex(0);
-            println!("reference: {:?}", reference);
             let start = reference;
             let mut counter = 0;
 
@@ -93,16 +90,16 @@ pub trait ComputeNoFitPolygon: Polygon {
                 // we need to carry around indices into self and other
                 // to avoid dealing with lots of mutable refernces
                 for ((idx_self_start, self_segment), (idx_other_start, other_segment)) in self
-                    .iter_segments_local()
+                    .iter_segments()
                     .enumerate()
                     .cartesian_product(other.iter_segments().enumerate())
                 {
-                    let idx_self_end = if idx_self_start == self.length() {
+                    let idx_self_end = if idx_self_start == self.length() - 1 {
                         0
                     } else {
                         idx_self_start + 1
                     };
-                    let idx_other_end = if idx_other_start == other.length() {
+                    let idx_other_end = if idx_other_start == other.length() - 1 {
                         0
                     } else {
                         idx_other_start + 1
@@ -131,7 +128,6 @@ pub trait ComputeNoFitPolygon: Polygon {
 
                 // generate translation vectors from touching vertices / edges
                 let mut vectors: Vec<Vector<<Self as Polygon>::Point>> = vec![];
-                println!("touchings: {:#?}", touchings);
                 for touching in touchings {
                     let vertex_self = self.get_vertex(touching.a);
                     self_marked[touching.a] = true;
@@ -184,13 +180,13 @@ pub trait ComputeNoFitPolygon: Polygon {
                             // other's vectors need to be inverted
                             // TODO: check if we need to actually localize the other polygon
                             vectors.push(Vector {
-                                point: vertex_other - prev_vertex_other,// - other.offset(),
+                                point: vertex_other - prev_vertex_other, // - other.offset(),
                                 start: prev_other_index,
                                 end: touching.b,
                                 source: PolygonSource::B,
                             });
                             vectors.push(Vector {
-                                point: vertex_other - next_vertex_other,// - other.offset(),
+                                point: vertex_other - next_vertex_other, // - other.offset(),
                                 start: next_other_index,
                                 end: touching.b,
                                 source: PolygonSource::B,
@@ -229,7 +225,6 @@ pub trait ComputeNoFitPolygon: Polygon {
                 let mut translate = None::<Vector<<Self as Polygon>::Point>>;
                 let mut max_d = <<Self as Polygon>::Point as Point2D>::Value::zero();
 
-                println!("prev_vector: {:?}", prev_vector);
                 for vector in vectors {
                     if vector.point.is_zero() {
                         continue;
@@ -253,30 +248,26 @@ pub trait ComputeNoFitPolygon: Polygon {
                     }
 
                     // i think this should return 0 if a slide is not possible
-                    let mut d = self.slide_distance_on_polygon(&other, vector.point);
+                    let mut d = self.slide_distance_on_polygon(&other, vector.point, true);
                     let vector_d2 = vector.point.dot(&vector.point);
 
                     if d.is_none() || d.unwrap() * d.unwrap() > vector_d2 {
                         d = Some(vector_d2.sqrt());
                     }
-                    println!("vector: {:?}, slide_distance: {:?}", vector, d);
 
                     if let Some(d) = d {
                         if d > max_d {
                             max_d = d;
                             translate = Some(vector);
-                            //println!("translate: {:?}", translate);
                         }
                     }
                 }
 
                 if translate.is_none() || abs_diff_eq!(max_d, Zero::zero()) {
                     // didn't close the loop, something went wrong here
-                    println!("Something went wrong, didn't close the loop, translate: {:?}, max_d: {:?}", translate, max_d);
                     nfp = None;
                     break;
                 }
-                println!("translate: {:?}", translate);
                 if let Some(translate) = &translate {
                     match translate.source {
                         PolygonSource::A => {
@@ -307,9 +298,7 @@ pub trait ComputeNoFitPolygon: Polygon {
                 reference.set_y(reference.y() + translate.unwrap().point.y());
 
                 // we've made a full loop
-                println!("reference: {:?}", reference);
                 if abs_diff_eq!(reference, start) {
-                    println!("we've made a full loop");
                     break;
                 }
 
@@ -377,10 +366,10 @@ pub trait ComputeNoFitPolygon: Polygon {
                 for j in 0..other.length() {
                     other.set_offset(*self_segment.start() - other.get_vertex(j));
 
-                    // TODO: This kinda looks suspicious
                     let mut other_inside = None::<bool>;
-                    for k in 0..other.length() {
-                        if let Some(in_poly) = other.get_vertex(k).in_polygon(self) {
+                    // TODO: This kinda looks suspicious
+                    for kp in other.iter_vertices() {
+                        if let Some(in_poly) = kp.in_polygon(self) {
                             other_inside = Some(in_poly);
                             break;
                         }
@@ -392,8 +381,8 @@ pub trait ComputeNoFitPolygon: Polygon {
                     };
 
                     let mut start_point = other.offset();
-                    if (other_inside && inside || !other_inside && !inside)
-                        && self.intersects_polygon(&other)
+                    if ((other_inside && inside) || (!other_inside && !inside))
+                        && !self.intersects_polygon(&other)
                         && !Self::in_nfp(&start_point, &nfp)
                     {
                         return Some(start_point);
@@ -402,7 +391,7 @@ pub trait ComputeNoFitPolygon: Polygon {
                     // Slide other along vector
                     let mut v = *self_segment.end() - *self_segment.start();
                     let d1 = self.project_distance_on_polygon(&other, v);
-                    let d2 = self.project_distance_on_polygon(&other, -v);
+                    let d2 = other.project_distance_on_polygon(self, -v);
 
                     let d = if d1.is_none() && d2.is_none() {
                         None
@@ -424,7 +413,7 @@ pub trait ComputeNoFitPolygon: Polygon {
 
                     let vd2 = v.dot(&v);
                     if d * d < vd2 && !abs_diff_eq!(d * d, vd2) {
-                        let vd = v.dot(&v);
+                        let vd = v.dot(&v).sqrt();
                         v.set_x(v.x() * d / vd);
                         v.set_y(v.y() * d / vd);
                     }
@@ -473,5 +462,76 @@ pub trait ComputeNoFitPolygon: Polygon {
         }
 
         false
+    }
+}
+
+mod tests {
+    #[test]
+    fn test_no_fit_polygon_one_convex_no_holes_outside() {
+        use super::ComputeNoFitPolygon;
+        use crate::kernelf64::*;
+        use crate::polygon::Polygon as _;
+        let mut polygon1 = Polygon::from(vec![
+            Point2D { x: 0.0, y: 0.0 },
+            Point2D { x: 2.0, y: 4.0 },
+            Point2D { x: 2.0, y: 2.0 },
+            Point2D { x: 2.9, y: 1.0 },
+            Point2D { x: 5.0, y: 1.0 },
+            Point2D { x: 5.0, y: 0.0 },
+        ]);
+        polygon1.translate(5.0, 5.0);
+
+        let mut polygon2 = Polygon::from(vec![
+            Point2D { x: 0.0, y: 0.0 },
+            Point2D { x: 1.0, y: 1.0 },
+            Point2D { x: 1.0, y: -1.0 },
+        ]);
+        polygon2.translate(8.0, 8.0);
+
+        let expected_nfp = vec![vec![
+            Point2D { x: 4.0, y: 4.0 },
+            Point2D { x: 9.0, y: 4.0 },
+            Point2D { x: 10.0, y: 5.0 },
+            Point2D { x: 10.0, y: 6.0 },
+            Point2D { x: 9.0, y: 7.0 },
+            Point2D { x: 7.0, y: 7.0 },
+            Point2D { x: 7.0, y: 9.0 },
+            Point2D { x: 6.0, y: 10.0 },
+            Point2D { x: 4.0, y: 6.0 },
+        ]];
+        let nfp = polygon1.no_fit_polygon(&polygon2, false, false);
+        assert_eq!(nfp, Some(expected_nfp));
+    }
+
+    #[test]
+    fn test_no_fit_polygon_one_convex_no_holes_inside() {
+        use super::ComputeNoFitPolygon;
+        use crate::kernelf64::*;
+        use crate::polygon::Polygon as _;
+
+        let mut polygon1 = Polygon::from(vec![
+            Point2D { x: 0.0, y: 0.0 },
+            Point2D { x: 2.0, y: 4.0 },
+            Point2D { x: 2.0, y: 2.0 },
+            Point2D { x: 2.9, y: 1.0 },
+            Point2D { x: 5.0, y: 1.0 },
+            Point2D { x: 5.0, y: 0.0 },
+        ]);
+        polygon1.translate(5.0, 5.0);
+
+        let mut polygon2 = Polygon::from(vec![
+            Point2D { x: 0.0, y: 0.0 },
+            Point2D { x: 1.0, y: 1.0 },
+            Point2D { x: 1.0, y: -1.0 },
+        ]);
+        polygon2.translate(8.0, 8.0);
+
+        let expected_nfp = vec![vec![
+            Point2D { x: 5.5, y: 6.0 },
+            Point2D { x: 6.0, y: 7.0 },
+            Point2D { x: 6.0, y: 6.0 },
+        ]];
+        let nfp = polygon1.no_fit_polygon(&polygon2, true, false);
+        assert_eq!(nfp, Some(expected_nfp));
     }
 }

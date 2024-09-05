@@ -89,28 +89,24 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
         let Some(direction) = direction.normalized() else {
             return None;
         };
-        let mut normal = direction.clone();
-        normal.set_x(direction.y());
-        normal.set_y(-direction.x());
 
-        let mut reverse = direction.clone();
-        reverse.set_x(-direction.x());
-        reverse.set_y(-direction.y());
+        let normal = <<Self as Segment>::Point as Point2D>::from_xy(direction.y(), -direction.x());
+        let reverse = -direction.clone();
 
         let a = self.start();
         let b = self.end();
         let e = other.start();
         let f = other.end();
 
-        let dot_a = a.x() * normal.x() + a.y() * normal.y();
-        let dot_b = b.x() * normal.x() + b.y() * normal.y();
-        let dot_e = e.x() * normal.x() + e.y() * normal.y();
-        let dot_f = f.x() * normal.x() + f.y() * normal.y();
+        let dot_a = a.dot(&normal);
+        let dot_b = b.dot(&normal);
+        let dot_e = e.dot(&normal);
+        let dot_f = f.dot(&normal);
 
-        let cross_a = a.x() * direction.x() + a.y() * direction.y();
-        let cross_b = b.x() * direction.x() + b.y() * direction.y();
-        let cross_e = e.x() * direction.x() + e.y() * direction.y();
-        let cross_f = f.x() * direction.x() + f.y() * direction.y();
+        let cross_a = a.dot(&direction);
+        let cross_b = b.dot(&direction);
+        let cross_e = e.dot(&direction);
+        let cross_f = f.dot(&direction);
 
         let ab_min = dot_a.min(dot_b);
         let ab_max = dot_a.max(dot_b);
@@ -129,7 +125,7 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
 
         let overlap =
             if (ab_max > ef_max && ab_min < ef_min) || (ef_max > ab_max && ef_min < ab_min) {
-                <<Self as Segment>::Point as Point2D>::Value::one()
+                One::one()
             } else {
                 let min_max = ab_max.min(ef_max);
                 let max_min = ab_min.max(ef_min);
@@ -143,43 +139,31 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
         let cross_abf = (f.y() - a.y()) * (b.x() - a.x()) - (f.x() - a.x()) * (b.y() - a.y());
 
         // lines are colinear
-        if abs_diff_eq!(
-            cross_abe,
-            <<Self as Segment>::Point as Point2D>::Value::zero()
-        ) && abs_diff_eq!(
-            cross_abf,
-            <<Self as Segment>::Point as Point2D>::Value::zero()
-        ) {
-            let mut ab_norm = normal.clone();
-            ab_norm.set_x(b.y() - a.y());
-            ab_norm.set_y(a.x() - b.x());
+        if abs_diff_eq!(cross_abe, Zero::zero()) && abs_diff_eq!(cross_abf, Zero::zero()) {
+            let ab_norm =
+                <<Self as Segment>::Point as Point2D>::from_xy(b.y() - a.y(), a.x() - b.x());
+            let ef_norm =
+                <<Self as Segment>::Point as Point2D>::from_xy(f.y() - e.y(), e.x() - f.x());
+
             let Some(ab_norm) = ab_norm.normalized() else {
                 return None;
             };
 
-            let mut ef_norm = normal.clone();
-            ef_norm.set_x(f.y() - e.y());
-            ef_norm.set_y(e.x() - f.x());
             let Some(ef_norm) = ef_norm.normalized() else {
                 return None;
             };
 
             // segment normals must point in opposite directions
-            if (ab_norm.y() * ef_norm.x() - ab_norm.x() * ef_norm.y()).abs()
-                < <<Self as Segment>::Point as Point2D>::Value::epsilon()
-                && ab_norm.y() * ef_norm.y() + ab_norm.x() * ef_norm.x()
-                    < <<Self as Segment>::Point as Point2D>::Value::zero()
+            if (ab_norm.y() * ef_norm.x() - ab_norm.x() * ef_norm.y()).abs() < Float::epsilon()
+                && ab_norm.y() * ef_norm.y() + ab_norm.x() * ef_norm.x() < Zero::zero()
             {
                 // normal of AB segment must point in same direction as given direction vector
                 let norm_dot = ab_norm.y() * direction.y() + ab_norm.x() * direction.x();
-                if abs_diff_eq!(
-                    norm_dot,
-                    <<Self as Segment>::Point as Point2D>::Value::zero()
-                ) {
+                if abs_diff_eq!(norm_dot, Zero::zero()) {
                     return None;
                 }
-                if norm_dot < <<Self as Segment>::Point as Point2D>::Value::zero() {
-                    return Some(<<Self as Segment>::Point as Point2D>::Value::zero());
+                if norm_dot < Zero::zero() {
+                    return Some(Zero::zero());
                 }
             }
             return None;
@@ -195,15 +179,10 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
         } else if dot_a > ef_min && dot_a < ef_max {
             let mut d = a.distance_to_segment(other, reverse, false);
             if let Some(dhat) = d {
-                if abs_diff_eq!(dhat, <<Self as Segment>::Point as Point2D>::Value::zero()) {
+                if abs_diff_eq!(dhat, Zero::zero()) {
                     let db = b.distance_to_segment(other, reverse, true);
                     if let Some(db) = db {
-                        if db < <<Self as Segment>::Point as Point2D>::Value::zero()
-                            || abs_diff_eq!(
-                                db * overlap,
-                                <<Self as Segment>::Point as Point2D>::Value::zero()
-                            )
-                        {
+                        if db < Zero::zero() || abs_diff_eq!(db * overlap, Zero::zero()) {
                             d = None;
                         }
                     }
@@ -221,15 +200,10 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
         } else if dot_b > ef_min && dot_b < ef_max {
             let mut d = b.distance_to_segment(other, reverse, false);
             if let Some(dhat) = d {
-                if abs_diff_eq!(dhat, <<Self as Segment>::Point as Point2D>::Value::zero()) {
+                if abs_diff_eq!(dhat, Zero::zero()) {
                     let da = a.distance_to_segment(other, reverse, true);
                     if let Some(da) = da {
-                        if da < <<Self as Segment>::Point as Point2D>::Value::zero()
-                            || abs_diff_eq!(
-                                da * overlap,
-                                <<Self as Segment>::Point as Point2D>::Value::zero()
-                            )
-                        {
+                        if da < Zero::zero() || abs_diff_eq!(da * overlap, Zero::zero()) {
                             d = None;
                         }
                     }
@@ -243,15 +217,10 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
         if dot_e > ab_min && dot_e < ab_max {
             let mut d = e.distance_to_segment(self, direction, false);
             if let Some(dhat) = d {
-                if abs_diff_eq!(dhat, <<Self as Segment>::Point as Point2D>::Value::zero()) {
-                    let df = f.distance_to_segment(self, reverse, true);
+                if abs_diff_eq!(dhat, Zero::zero()) {
+                    let df = f.distance_to_segment(self, direction, true);
                     if let Some(df) = df {
-                        if df < <<Self as Segment>::Point as Point2D>::Value::zero()
-                            || abs_diff_eq!(
-                                df * overlap,
-                                <<Self as Segment>::Point as Point2D>::Value::zero()
-                            )
-                        {
+                        if df < Zero::zero() || abs_diff_eq!(df * overlap, Zero::zero()) {
                             d = None;
                         }
                     }
@@ -265,15 +234,10 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
         if dot_f > ab_min && dot_f < ab_max {
             let mut d = f.distance_to_segment(self, direction, false);
             if let Some(dhat) = d {
-                if abs_diff_eq!(dhat, <<Self as Segment>::Point as Point2D>::Value::zero()) {
-                    let de = e.distance_to_segment(self, reverse, true);
+                if abs_diff_eq!(dhat, Zero::zero()) {
+                    let de = e.distance_to_segment(self, direction, true);
                     if let Some(de) = de {
-                        if de < <<Self as Segment>::Point as Point2D>::Value::zero()
-                            || abs_diff_eq!(
-                                de * overlap,
-                                <<Self as Segment>::Point as Point2D>::Value::zero()
-                            )
-                        {
+                        if de < Zero::zero() || abs_diff_eq!(de * overlap, Zero::zero()) {
                             d = None;
                         }
                     }
@@ -292,7 +256,6 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
             .into_iter()
             .min_by(|a, b| a.partial_cmp(b).unwrap());
     }
-
 }
 
 mod tests {
@@ -372,8 +335,8 @@ mod tests {
 
         // test segments that will miss each other completely
         //   | segment 2
-        //   | 
-        //   
+        //   |
+        //
         // |   segment 1
         // |
         let segment1 = Segment {
@@ -389,7 +352,7 @@ mod tests {
 
         // test segments that are one away from each other
         //   | segment 2
-        // | | 
+        // | |
         // | |
         // |   segment 1
         let segment1 = Segment {
@@ -402,7 +365,5 @@ mod tests {
         };
         let distance = segment1.distance_to_segment_along_direction(&segment2, direction);
         assert_eq!(distance, Some(1.0));
-
-
     }
 }

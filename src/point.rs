@@ -137,13 +137,11 @@ pub trait Point2D:
         }
 
         let mut inside = false;
-        let offset_x = polygon.offset().x();
-        let offset_y = polygon.offset().y();
-        for seg in polygon.iter_segments_local() {
-            let x0 = seg.start().x() + offset_x;
-            let y0 = seg.start().y() + offset_y;
-            let x1 = seg.end().x() + offset_x;
-            let y1 = seg.end().y() + offset_y;
+        for seg in polygon.iter_segments() {
+            let x0 = seg.start().x();
+            let y0 = seg.start().y();
+            let x1 = seg.end().x();
+            let y1 = seg.end().y();
 
             // on the perimeter of the polygon
             if abs_diff_eq!(x0, self.x()) && abs_diff_eq!(y0, self.y()) {
@@ -154,7 +152,7 @@ pub trait Point2D:
                 return None;
             }
 
-            if abs_diff_eq!(x0, x1) && abs_diff_eq!(y0, y1) {
+            if abs_diff_eq!(seg.start(), seg.end()) {
                 continue;
             }
 
@@ -179,46 +177,38 @@ pub trait Point2D:
         infinite: bool,
     ) -> Option<Self::Value> {
         let normal = normal.normalized();
-        if let Some(normal) = normal {
-            let mut dir = normal.clone();
-            dir.set_x(normal.y());
-            dir.set_y(-normal.x());
+        let Some(normal) = normal else { return None };
+        let dir = Self::from_xy(normal.y(), -normal.x());
 
-            let pdot = self.x() * dir.x() + self.y() * dir.y();
-            let s1dot = segment.start().x() * dir.x() + segment.start().y() * dir.y();
-            let s2dot = segment.end().x() * dir.x() + segment.end().y() * dir.y();
+        let pdot = self.dot(&dir);
+        let s1dot = segment.start().dot(&dir);
+        let s2dot = segment.end().dot(&dir);
 
-            let pdotnorm = self.x() * normal.x() + self.y() * normal.y();
-            let s1dotnorm = segment.start().x() * normal.x() + segment.start().y() * normal.y();
-            let s2dotnorm = segment.end().x() * normal.x() + segment.end().y() * normal.y();
+        let pdotnorm = self.dot(&normal);
+        let s1dotnorm = segment.start().dot(&normal);
+        let s2dotnorm = segment.end().dot(&normal);
 
-            if !infinite {
-                if ((pdot < s1dot || abs_diff_eq!(pdot, s1dot))
-                    && (pdot < s2dot || abs_diff_eq!(pdot, s2dot)))
-                    || ((pdot > s1dot || abs_diff_eq!(pdot, s1dot))
-                        && (pdot > s2dot || abs_diff_eq!(pdot, s2dot)))
-                {
-                    return None; // point doesn't collide with segment, or lies directly on the vertex
-                }
-                if (abs_diff_eq!(pdot, s1dot) && abs_diff_eq!(pdot, s2dot))
-                    && (pdotnorm > s1dotnorm && pdotnorm > s2dotnorm)
-                {
-                    return Some((pdotnorm - s1dotnorm).min(pdotnorm - s2dotnorm));
-                }
-                if (abs_diff_eq!(pdot, s1dot) && abs_diff_eq!(pdot, s2dot))
-                    && (pdotnorm < s1dotnorm && pdotnorm < s2dotnorm)
-                {
-                    return Some(-(s1dotnorm - pdotnorm).min(s2dotnorm - pdotnorm));
-                }
+        if !infinite {
+            if ((pdot < s1dot || abs_diff_eq!(pdot, s1dot))
+                && (pdot < s2dot || abs_diff_eq!(pdot, s2dot)))
+                || ((pdot > s1dot || abs_diff_eq!(pdot, s1dot))
+                    && (pdot > s2dot || abs_diff_eq!(pdot, s2dot)))
+            {
+                return None; // point doesn't collide with segment, or lies directly on the vertex
             }
-
-            Some(
-                -(pdotnorm - s1dotnorm
-                    + (s1dotnorm - s2dotnorm) * (s1dot - pdot) / (s1dot - s2dot)),
-            )
-        } else {
-            None
+            if (abs_diff_eq!(pdot, s1dot) && abs_diff_eq!(pdot, s2dot))
+                && (pdotnorm > s1dotnorm && pdotnorm > s2dotnorm)
+            {
+                return Some((pdotnorm - s1dotnorm).min(pdotnorm - s2dotnorm));
+            }
+            if (abs_diff_eq!(pdot, s1dot) && abs_diff_eq!(pdot, s2dot))
+                && (pdotnorm < s1dotnorm && pdotnorm < s2dotnorm)
+            {
+                return Some(-(s1dotnorm - pdotnorm).min(s2dotnorm - pdotnorm));
+            }
         }
+
+        Some(-(pdotnorm - s1dotnorm + (s1dotnorm - s2dotnorm) * (s1dot - pdot) / (s1dot - s2dot)))
     }
 }
 

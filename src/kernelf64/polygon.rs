@@ -66,10 +66,7 @@ impl crate::polygon::Polygon for Polygon {
 }
 
 impl ComputeNoFitPolygon for Polygon {
-    fn get_vertex(
-        &self,
-        index: usize,
-    ) -> <Self as crate::polygon::Polygon>::Point {
+    fn get_vertex(&self, index: usize) -> <Self as crate::polygon::Polygon>::Point {
         self.vertices[index] + self.offset
     }
 }

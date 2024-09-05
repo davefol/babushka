@@ -1,6 +1,6 @@
-use std::ops::{Add, Neg, Sub};
 use approx::AbsDiffEq;
 use num_traits::Zero;
+use std::ops::{Add, Neg, Sub};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Point2D {
@@ -30,8 +30,6 @@ impl crate::point::Point2D for Point2D {
     fn set_y(&mut self, y: Self::Value) {
         self.y = y;
     }
-
-
 }
 
 impl Add for Point2D {
@@ -64,7 +62,6 @@ impl Neg for Point2D {
     }
 }
 
-
 impl Zero for Point2D {
     fn zero() -> Self {
         Self { x: 0.0, y: 0.0 }
@@ -76,7 +73,7 @@ impl Zero for Point2D {
 }
 
 impl AbsDiffEq<Point2D> for Point2D {
-    type Epsilon = f64; 
+    type Epsilon = f64;
     fn abs_diff_eq(&self, other: &Point2D, epsilon: Self::Epsilon) -> bool {
         self.x.abs_diff_eq(&other.x, epsilon) && self.y.abs_diff_eq(&other.y, epsilon)
     }
