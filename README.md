@@ -1,4 +1,4 @@
-# Babushka &emsp; [![Build Status]][actions] [![Latest Version]][crates.io]
+# Babushka &emsp; [![Build Status]][actions] [![Latest Version]][crates.io] [![documentation](https://docs.rs/num-traits/badge.svg)](https://docs.rs/num-traits)
 [Build Status]: https://img.shields.io/github/actions/workflow/status/davefol/babushka/rust.yml?branch=main
 [actions]: https://github.com/davefol/babushka/actions?query=branch%3Amain
 [Latest Version]: https://img.shields.io/crates/v/babushka.svg
