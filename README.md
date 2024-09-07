@@ -1,4 +1,8 @@
-# Babushka
+# Babushka &emsp; [![Build Status]][actions] [![Latest Version]][crates.io]
+[Build Status]: https://img.shields.io/github/actions/workflow/status/davefol/babushka/rust.yml?branch=main
+[actions]: https://github.com/davefol/babushka/actions?query=branch%3Amain
+[Latest Version]: https://img.shields.io/crates/v/babushka.svg
+[crates.io]: https://crates.io/crates/babushka
 Babushka is a Rust library for 2D geometry algorithms, with a focus on efficient bin packing and nesting.
 
 ## Features
