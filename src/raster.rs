@@ -2,8 +2,8 @@ use crate::piece::Piece;
 use crate::point::Point2D;
 use crate::polygon::Polygon;
 use crate::segment::Segment;
-use num_traits::ToPrimitive;
 use font8x8::UnicodeFonts;
+use num_traits::ToPrimitive;
 use petgraph::graph::NodeIndex;
 
 pub fn world_to_screen(x: f64, y: f64, scale: f64, height: usize) -> (i32, i32) {
@@ -122,7 +122,15 @@ pub fn draw_direction<P: Point2D>(
     draw_line(buffer, x1, y1, x2, y2, color, width, height);
 }
 
-pub fn draw_text(buffer: &mut Vec<u32>, text: &str, x: usize, y: usize, color: u32, width: usize, height: usize) {
+pub fn draw_text(
+    buffer: &mut Vec<u32>,
+    text: &str,
+    x: usize,
+    y: usize,
+    color: u32,
+    width: usize,
+    height: usize,
+) {
     for (i, c) in text.chars().enumerate() {
         let cx = x + i * 8;
         let cy = y;
@@ -130,7 +138,15 @@ pub fn draw_text(buffer: &mut Vec<u32>, text: &str, x: usize, y: usize, color: u
     }
 }
 
-pub fn draw_char(buffer: &mut Vec<u32>, c: char, x: usize, y: usize, color: u32, width: usize, height: usize) {
+pub fn draw_char(
+    buffer: &mut Vec<u32>,
+    c: char,
+    x: usize,
+    y: usize,
+    color: u32,
+    width: usize,
+    height: usize,
+) {
     let font = font8x8::BASIC_FONTS.get(c).unwrap();
     for (row, byte) in font.iter().enumerate() {
         for col in 0..8 {
@@ -162,7 +178,14 @@ pub fn best_grid(n: usize, aspect_ratio: f64) -> (usize, usize) {
     (best_rows, best_cols)
 }
 
-pub fn draw_piece<P: Polygon>(buffer: &mut Vec<u32>, piece: &Piece<P>, root_index: NodeIndex, scale: f64, width: usize, height: usize) {
+pub fn draw_piece<P: Polygon>(
+    buffer: &mut Vec<u32>,
+    piece: &Piece<P>,
+    root_index: NodeIndex,
+    scale: f64,
+    width: usize,
+    height: usize,
+) {
     // Draw the rectangle (outer polygon)
     if let Some(rectangle) = piece.get_polygon(root_index) {
         draw_polygon(buffer, rectangle, 0xFF0000, scale, width, height);

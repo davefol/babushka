@@ -1,7 +1,7 @@
 use babushka::kernelf64::{Point2D, Polygon as KernelPolygon};
 use babushka::piece::Piece;
-use minifb::{Key, Window, WindowOptions};
 use babushka::raster::draw_piece;
+use minifb::{Key, Window, WindowOptions};
 
 const WIDTH: usize = 800;
 const HEIGHT: usize = 600;

@@ -17,7 +17,7 @@
 
 use crate::point::Point2D;
 use crate::polygon::Polygon;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use num_traits::Zero;
 use std::{
     io::{BufRead, BufReader, Read},

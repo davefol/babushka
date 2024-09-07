@@ -1,7 +1,7 @@
 use babushka::kernelf64::{Point2D, Segment};
+use babushka::raster::*;
 use babushka::segment::Segment as _;
 use minifb::{Key, Window, WindowOptions};
-use babushka::raster::*;
 
 const WIDTH: usize = 800;
 const HEIGHT: usize = 600;
@@ -43,7 +43,15 @@ fn main() {
     while window.is_open() && !window.is_key_down(Key::Escape) {
         draw_segment(&mut buffer, &segment1, 0xFF0000, SCALE, WIDTH, HEIGHT);
         draw_segment(&mut buffer, &segment2, 0x00FF00, SCALE, WIDTH, HEIGHT);
-        draw_direction(&mut buffer, &segment1.start, &direction, 0x0000FF, SCALE, WIDTH, HEIGHT);
+        draw_direction(
+            &mut buffer,
+            &segment1.start,
+            &direction,
+            0x0000FF,
+            SCALE,
+            WIDTH,
+            HEIGHT,
+        );
 
         let distance = segment1.distance_to_segment_along_direction(&segment2, direction);
         let distance_text = match distance {
@@ -62,4 +70,3 @@ fn main() {
         segment2.end.x = 2.0 + translation.sin() * 2.0;
     }
 }
-

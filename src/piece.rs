@@ -18,7 +18,10 @@ impl<P: Polygon> Piece<P> {
 
     pub fn from_roots(root_polygons: impl IntoIterator<Item = P>) -> Self {
         let mut graph = Graph::new();
-        let roots = root_polygons.into_iter().map(|polygon| graph.add_node(polygon)).collect::<Vec<_>>();
+        let roots = root_polygons
+            .into_iter()
+            .map(|polygon| graph.add_node(polygon))
+            .collect::<Vec<_>>();
         Piece { graph, roots }
     }
 
@@ -51,8 +54,17 @@ impl<P: Polygon> Piece<P> {
     }
 
     pub fn node_depth(&self, node: NodeIndex) -> Option<usize> {
-        if self.graph.neighbors_directed(node, petgraph::Direction::Incoming).count() == 0 &&
-           self.graph.neighbors_directed(node, petgraph::Direction::Outgoing).count() == 0 {
+        if self
+            .graph
+            .neighbors_directed(node, petgraph::Direction::Incoming)
+            .count()
+            == 0
+            && self
+                .graph
+                .neighbors_directed(node, petgraph::Direction::Outgoing)
+                .count()
+                == 0
+        {
             return None;
         }
 
