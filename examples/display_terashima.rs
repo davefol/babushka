@@ -1,6 +1,8 @@
 use babushka::kernelf64::Polygon;
 use babushka::parsers::terashima::{parse_terashima, TerashimaInstance};
 use babushka::polygon::Polygon as _;
+use common::best_grid;
+use itertools::Itertools;
 use minifb::{Key, Window, WindowOptions};
 use std::fs::File;
 use std::path::PathBuf;
@@ -9,7 +11,7 @@ mod common;
 
 const WIDTH: usize = 800;
 const HEIGHT: usize = 600;
-const SCALE: f64 = 0.5;
+const SCALE: f64 = 0.07;
 
 fn main() {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -17,10 +19,24 @@ fn main() {
     let file = File::open(path).unwrap();
     let mut instance: TerashimaInstance<Polygon> =
         parse_terashima(file).expect("Failed to load Terashima file");
-    instance.bin.translate(250.0, 100.0);
+
+    instance.bin.translate(100.0, 100.0);
+
+    // move the pieces into a neat grid with some padding
+    let (rows, cols) = best_grid(instance.pieces.len(), WIDTH as f64 / HEIGHT as f64);
+    for (idx, (i, j)) in (0..rows).cartesian_product(0..cols).enumerate() {
+        let x = j as f64 * (WIDTH as f64) * 0.9 / cols as f64 / SCALE;
+        let y = i as f64 * (HEIGHT as f64) * 0.9 / rows as f64 / SCALE;
+        if idx >= instance.pieces.len() {
+            break;
+        }
+        instance.pieces[idx].set_offset((x, y).into());
+        instance.pieces[idx].translate(WIDTH as f64 * 0.1 / SCALE, HEIGHT as f64  * 0.1 / SCALE);
+    }
+
 
     let mut buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];
-    let mut window = Window::new("Terashima Display", WIDTH, HEIGHT, WindowOptions::default())
+    let mut window = Window::new("Terashima TV001C5", WIDTH, HEIGHT, WindowOptions::default())
         .unwrap_or_else(|e| {
             panic!("{}", e);
         });

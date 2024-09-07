@@ -142,3 +142,20 @@ pub fn draw_char(buffer: &mut Vec<u32>, c: char, x: usize, y: usize, color: u32,
         }
     }
 }
+
+pub fn best_grid(n: usize, aspect_ratio: f64) -> (usize, usize) {
+    let mut best_rows = 1;
+    let mut best_cols = n;
+    let mut min_diff = f64::INFINITY;
+    for rows in 1..=n {
+        let cols = (n as f64 / rows as f64).ceil() as usize;
+        let actual_ratio = cols as f64 / rows as f64;
+        let diff = (actual_ratio - aspect_ratio).abs();
+        if diff < min_diff {
+            min_diff = diff;
+            best_rows = rows;
+            best_cols = cols;
+        }
+    }
+    (best_rows, best_cols)
+}

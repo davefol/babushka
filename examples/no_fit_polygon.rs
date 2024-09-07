@@ -4,10 +4,12 @@ use babushka::polygon::Polygon as _;
 use minifb::{Key, Window, WindowOptions};
 mod common;
 use common::*;
+use std::time::{Duration, Instant};
 
 const WIDTH: usize = 800;
 const HEIGHT: usize = 600;
 const SCALE: f64 = 50.0;
+const ANIMATION_INTERVAL: Duration = Duration::from_millis(500);
 
 fn main() {
     let mut polygon1 = Polygon::from(vec![
@@ -43,26 +45,32 @@ fn main() {
         panic!("{}", e);
     });
 
+    let mut last_update = Instant::now();
+
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        buffer.fill(0); // Clear the buffer
+        let now = Instant::now();
+        if now.duration_since(last_update) >= ANIMATION_INTERVAL {
+            buffer.fill(0); // Clear the buffer
 
-        draw_polygon(&mut buffer, &polygon1, 0xFF0000, SCALE, WIDTH, HEIGHT);
+            draw_polygon(&mut buffer, &polygon1, 0xFF0000, SCALE, WIDTH, HEIGHT);
 
-        // Animate polygon2 by setting its offset to values from the nfp
-        if !nfp.is_empty() && !nfp[0].is_empty() {
-            polygon2.set_offset(nfp[0][nfp_index]);
-            nfp_index = (nfp_index + 1) % nfp[0].len();
+            // Animate polygon2 by setting its offset to values from the nfp
+            if !nfp.is_empty() && !nfp[0].is_empty() {
+                polygon2.set_offset(nfp[0][nfp_index]);
+                nfp_index = (nfp_index + 1) % nfp[0].len();
+            }
+
+            draw_polygon(&mut buffer, &polygon2, 0x00FF00, SCALE, WIDTH, HEIGHT);
+            for nfp_part in &nfp {
+                let nfp_polygon = Polygon::from(nfp_part.clone());
+                draw_polygon(&mut buffer, &nfp_polygon, 0x0000FF, SCALE, WIDTH, HEIGHT);
+            }
+
+            window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
+
+            last_update = now;
         }
 
-        draw_polygon(&mut buffer, &polygon2, 0x00FF00, SCALE, WIDTH, HEIGHT);
-        for nfp_part in &nfp {
-            let nfp_polygon = Polygon::from(nfp_part.clone());
-            draw_polygon(&mut buffer, &nfp_polygon, 0x0000FF, SCALE, WIDTH, HEIGHT);
-        }
-
-        window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
-
-        // Add a small delay to control animation speed
-        std::thread::sleep(std::time::Duration::from_millis(500));
+        window.update();
     }
 }
