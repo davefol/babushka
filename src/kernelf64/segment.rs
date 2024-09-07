@@ -16,6 +16,12 @@ impl crate::segment::Segment for Segment {
     }
 }
 
+impl From<(Point2D, Point2D)> for Segment {
+    fn from((start, end): (Point2D, Point2D)) -> Self {
+        Self { start, end }
+    }
+}
+
 impl Add<Point2D> for Segment {
     type Output = Self;
     fn add(self, other: Point2D) -> Self::Output {

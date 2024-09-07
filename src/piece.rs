@@ -16,6 +16,20 @@ impl<P: Polygon> Piece<P> {
         }
     }
 
+    pub fn for_each_polygon<F>(&mut self, mut f: F)
+    where
+        F: FnMut(&mut P),
+    {
+        for node_index in self.graph.node_indices() {
+            let polygon = self.graph.node_weight_mut(node_index).unwrap();
+            f(polygon); 
+        }
+    }
+
+    pub fn node_indices(&self) -> impl Iterator<Item = NodeIndex> {
+        self.graph.node_indices()
+    }
+
     pub fn from_roots(root_polygons: impl IntoIterator<Item = P>) -> Self {
         let mut graph = Graph::new();
         let roots = root_polygons
@@ -51,6 +65,10 @@ impl<P: Polygon> Piece<P> {
 
     pub fn iter_children(&self, parent: NodeIndex) -> impl Iterator<Item = NodeIndex> + '_ {
         self.graph.neighbors(parent)
+    }
+
+    pub fn node_count(&self) -> usize {
+        self.graph.node_count()
     }
 
     pub fn node_depth(&self, node: NodeIndex) -> Option<usize> {

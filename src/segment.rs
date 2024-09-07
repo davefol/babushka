@@ -1,4 +1,5 @@
 use crate::point::Point2D;
+use crate::polygon::Polygon;
 use approx::abs_diff_eq;
 use num_traits::{Float, One, Zero};
 use std::ops::Add;
@@ -9,6 +10,30 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
     fn start(&self) -> &Self::Point;
     fn end(&self) -> &Self::Point;
 
+    /// Returns the intersection of this segment with a polygon.
+    /// The intersections are ordered by distance from the start of this segment.
+    fn intersects_polygon<P>(&self, other: &P) -> Vec<Self::Point>
+    where
+        P: Polygon<Segment = Self>,
+    {
+        let mut intersections = vec![];
+        for segment in other.iter_segments() {
+            let intersection = self.intersects_segment(&segment, false);
+            if let Some(intersection) = intersection {
+                intersections.push(intersection);
+            }
+        }
+        // order intersections by distance from self.start()
+        intersections.sort_by(|a, b| {
+            let dist_a = self.start().dot(&(*a - *self.start()));
+            let dist_b = self.start().dot(&(*b - *self.start()));
+            dist_a.partial_cmp(&dist_b).unwrap()
+        });
+        intersections
+    }
+
+    /// Returns the intersection of this segment with another segment.
+    /// Returns None if there is no intersection.
     fn intersects_segment(&self, other: &Self, infinite: bool) -> Option<Self::Point> {
         let a = self.start();
         let b = self.end();
@@ -363,5 +388,47 @@ mod tests {
         };
         let distance = segment1.distance_to_segment_along_direction(&segment2, direction);
         assert_eq!(distance, Some(1.0));
+    }
+
+    #[test]
+    fn test_segment_intersects_polygon() {
+        use super::Segment as _;
+        use crate::kernelf64::{Point2D, Segment, Polygon};
+
+        // Create a square polygon
+        let square = Polygon::from(vec![
+            Point2D { x: 0.0, y: 0.0 },
+            Point2D { x: 0.0, y: 2.0 },
+            Point2D { x: 2.0, y: 2.0 },
+            Point2D { x: 2.0, y: 0.0 },
+        ]);
+
+        // Create a segment that intersects the square
+        let segment = Segment {
+            start: Point2D { x: -1.0, y: 1.0 },
+            end: Point2D { x: 3.0, y: 1.0 },
+        };
+
+        // Get intersections
+        let intersections = segment.intersects_polygon(&square);
+
+        // Check if we have the correct number of intersections
+        assert_eq!(intersections.len(), 2);
+
+        // Check if the intersections are correct
+        assert!(intersections.contains(&Point2D { x: 0.0, y: 1.0 }));
+        assert!(intersections.contains(&Point2D { x: 2.0, y: 1.0 }));
+
+        // Create a segment that doesn't intersect the square
+        let non_intersecting_segment = Segment {
+            start: Point2D { x: -2.0, y: -1.0 },
+            end: Point2D { x: -1.0, y: -1.0 },
+        };
+
+        // Get intersections
+        let no_intersections = non_intersecting_segment.intersects_polygon(&square);
+
+        // Check that there are no intersections
+        assert_eq!(no_intersections.len(), 0);
     }
 }

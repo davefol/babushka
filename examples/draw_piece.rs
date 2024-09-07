@@ -1,5 +1,6 @@
 use babushka::kernelf64::{Point2D, Polygon as KernelPolygon};
 use babushka::piece::Piece;
+use babushka::polygon::Polygon;
 use babushka::raster::draw_piece;
 use minifb::{Key, Window, WindowOptions};
 
@@ -30,6 +31,8 @@ fn main() {
     let rectangle_index = piece.get_roots()[0];
     piece.add_child(rectangle_index, triangle);
 
+    piece.for_each_polygon(|p| p.translate(2.0, 1.5));
+
     let mut buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];
 
     let mut window = Window::new(
@@ -42,9 +45,9 @@ fn main() {
         panic!("{}", e);
     });
 
+    buffer.fill(0);
+    draw_piece(&mut buffer, &piece, SCALE, WIDTH, HEIGHT, 0xFFFFFF);
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        buffer.fill(0);
-        draw_piece(&mut buffer, &piece, rectangle_index, SCALE, WIDTH, HEIGHT);
         window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
     }
 }
