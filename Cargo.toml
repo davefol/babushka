@@ -13,9 +13,14 @@ keywords = ["nesting", "packing", "geometry"]
 [dependencies]
 anyhow = { version = "1.0.87", features=["backtrace"] }
 approx = "0.5.1"
-font8x8 = "0.3.1"
 itertools = "0.13.0"
 num-traits = "0.2.19"
+petgraph = "0.6.5"
 
-[dev-dependencies]
-minifb = "0.27"
+minifb = {version = "0.27", optional = true}
+font8x8 = { version = "0.3.1", optional = true}
+
+[features]
+default = ["example"]
+raster = ["font8x8"]
+example = ["minifb", "raster"]

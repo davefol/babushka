@@ -73,9 +73,7 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
             }
         }
 
-        let mut out = a.clone();
-        out.set_x(x);
-        out.set_y(y);
+        let out = Self::Point::from_xy(x, y);
         Some(out)
     }
 

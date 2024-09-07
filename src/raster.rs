@@ -1,8 +1,10 @@
-use babushka::point::Point2D;
-use babushka::polygon::Polygon;
-use babushka::segment::Segment;
+use crate::piece::Piece;
+use crate::point::Point2D;
+use crate::polygon::Polygon;
+use crate::segment::Segment;
 use num_traits::ToPrimitive;
 use font8x8::UnicodeFonts;
+use petgraph::graph::NodeIndex;
 
 pub fn world_to_screen(x: f64, y: f64, scale: f64, height: usize) -> (i32, i32) {
     ((x * scale) as i32, height as i32 - (y * scale) as i32)
@@ -158,4 +160,18 @@ pub fn best_grid(n: usize, aspect_ratio: f64) -> (usize, usize) {
         }
     }
     (best_rows, best_cols)
+}
+
+pub fn draw_piece<P: Polygon>(buffer: &mut Vec<u32>, piece: &Piece<P>, root_index: NodeIndex, scale: f64, width: usize, height: usize) {
+    // Draw the rectangle (outer polygon)
+    if let Some(rectangle) = piece.get_polygon(root_index) {
+        draw_polygon(buffer, rectangle, 0xFF0000, scale, width, height);
+    }
+
+    // Draw the triangular hole (inner polygon)
+    for child_index in piece.iter_children(root_index) {
+        if let Some(triangle) = piece.get_polygon(child_index) {
+            draw_polygon(buffer, triangle, 0x00FF00, scale, width, height);
+        }
+    }
 }

@@ -1,13 +1,11 @@
 use babushka::kernelf64::Polygon;
 use babushka::parsers::terashima::{parse_terashima, TerashimaInstance};
 use babushka::polygon::Polygon as _;
-use common::best_grid;
+use babushka::raster::{best_grid, draw_polygon, draw_text};
 use itertools::Itertools;
 use minifb::{Key, Window, WindowOptions};
 use std::fs::File;
 use std::path::PathBuf;
-
-mod common;
 
 const WIDTH: usize = 800;
 const HEIGHT: usize = 600;
@@ -31,9 +29,8 @@ fn main() {
             break;
         }
         instance.pieces[idx].set_offset((x, y).into());
-        instance.pieces[idx].translate(WIDTH as f64 * 0.1 / SCALE, HEIGHT as f64  * 0.1 / SCALE);
+        instance.pieces[idx].translate(WIDTH as f64 * 0.1 / SCALE, HEIGHT as f64 * 0.1 / SCALE);
     }
-
 
     let mut buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];
     let mut window = Window::new("Terashima TV001C5", WIDTH, HEIGHT, WindowOptions::default())
@@ -46,16 +43,16 @@ fn main() {
         buffer.fill(0);
 
         // Draw the bin
-        common::draw_polygon(&mut buffer, &instance.bin, 0xFFFFFF, SCALE, WIDTH, HEIGHT);
+        draw_polygon(&mut buffer, &instance.bin, 0xFFFFFF, SCALE, WIDTH, HEIGHT);
 
         // Draw the polygons
         for (i, polygon) in instance.pieces.iter().enumerate() {
             let color = 0xFF0000 | ((i as u32 * 50) << 8) | (i as u32 * 30);
-            common::draw_polygon(&mut buffer, polygon, color, SCALE, WIDTH, HEIGHT);
+            draw_polygon(&mut buffer, polygon, color, SCALE, WIDTH, HEIGHT);
         }
 
         // Display information
-        common::draw_text(
+        draw_text(
             &mut buffer,
             &format!(
                 "Bin size: {}x{}",
@@ -68,7 +65,7 @@ fn main() {
             WIDTH,
             HEIGHT,
         );
-        common::draw_text(
+        draw_text(
             &mut buffer,
             &format!("Number of polygons: {}", instance.pieces.len()),
             10,

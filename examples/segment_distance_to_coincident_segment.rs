@@ -1,8 +1,7 @@
 use babushka::kernelf64::{Point2D, Segment};
 use babushka::segment::Segment as _;
 use minifb::{Key, Window, WindowOptions};
-mod common;
-use common::*;
+use babushka::raster::*;
 
 const WIDTH: usize = 800;
 const HEIGHT: usize = 600;
