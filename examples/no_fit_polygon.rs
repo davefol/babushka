@@ -28,7 +28,7 @@ fn main() {
     ]);
     polygon2.translate(8.0, 8.0);
 
-    let nfp = polygon1.no_fit_polygon(&polygon2, false, false).unwrap();
+    let nfp = polygon1.no_fit_polygon(&polygon2, true, false).unwrap();
     println!("{:?}", nfp);
     let mut nfp_index = 0;
 

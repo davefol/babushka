@@ -1,0 +1,8 @@
+TERASHIMA2 data set 
+
+
+
+Description: 480 Irregular test instances 
+
+Artificially created data set with convex and non-convex polygons.
+

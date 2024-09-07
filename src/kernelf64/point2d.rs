@@ -32,6 +32,15 @@ impl crate::point::Point2D for Point2D {
     }
 }
 
+impl From<(f64, f64)> for Point2D {
+    fn from(tuple: (f64, f64)) -> Self {
+        Self {
+            x: tuple.0,
+            y: tuple.1,
+        }
+    }
+}
+
 impl Add for Point2D {
     type Output = Self;
     fn add(self, other: Self) -> Self::Output {
