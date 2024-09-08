@@ -1,6 +1,6 @@
 use approx::AbsDiffEq;
 use num_traits::Zero;
-use std::ops::{Add, Neg, Sub};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Point2D {
@@ -89,5 +89,25 @@ impl AbsDiffEq<Point2D> for Point2D {
 
     fn default_epsilon() -> Self::Epsilon {
         f64::default_epsilon()
+    }
+}
+
+impl Div<f64> for Point2D {
+    type Output = Self;
+    fn div(self, other: f64) -> Self::Output {
+        Self {
+            x: self.x / other,
+            y: self.y / other,
+        }
+    }
+}
+
+impl Mul<f64> for Point2D {
+    type Output = Self;
+    fn mul(self, other: f64) -> Self::Output {
+        Self {
+            x: self.x * other,
+            y: self.y * other,
+        }
     }
 }

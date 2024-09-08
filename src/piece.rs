@@ -83,7 +83,7 @@ impl<P: Polygon> Piece<P> {
                 .count()
                 == 0
         {
-            return None;
+            return Some(0);
         }
 
         let mut depth = 0;

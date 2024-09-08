@@ -99,6 +99,26 @@ pub trait Polygon: Clone + std::fmt::Debug {
         self.set_offset(offset);
     }
 
+    /// Translates the polygon to the point
+    fn translate_to_point(
+        &mut self,
+        point: &Self::Point,
+    ) {
+        let offset = self.offset().clone();
+        let dx = point.x() - offset.x();
+        let dy = point.y() - offset.y();
+        self.translate(dx, dy);
+    }
+
+    /// Translates the bounding box center of the polygon to the point
+    fn translate_center_to_point(
+        &mut self,
+        point: &Self::Point,
+    ) {
+        let center = self.bounding_box().center();
+        self.translate_to_point(&(*point - center));
+    }
+
     /// Return the area of the polygon assuming no self intersections.
     /// A negative area indicates counter-clockwise winding.
     fn area(&self) -> <<Self as Polygon>::Point as Point2D>::Value {

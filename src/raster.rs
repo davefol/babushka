@@ -165,23 +165,6 @@ pub fn draw_char(
     }
 }
 
-pub fn best_grid(n: usize, aspect_ratio: f64) -> (usize, usize) {
-    let mut best_rows = 1;
-    let mut best_cols = n;
-    let mut min_diff = f64::INFINITY;
-    for rows in 1..=n {
-        let cols = (n as f64 / rows as f64).ceil() as usize;
-        let actual_ratio = cols as f64 / rows as f64;
-        let diff = (actual_ratio - aspect_ratio).abs();
-        if diff < min_diff {
-            min_diff = diff;
-            best_rows = rows;
-            best_cols = cols;
-        }
-    }
-    (best_rows, best_cols)
-}
-
 /// Draws a filled piece onto a buffer
 pub fn draw_piece<P: Polygon>(
     buffer: &mut Vec<u32>,
@@ -189,13 +172,14 @@ pub fn draw_piece<P: Polygon>(
     scale: f64,
     width: usize,
     height: usize,
-    color: u32,
+    stroke_color: Option<u32>,
+    fill_color: Option<u32>
 ) where
     <P as Polygon>::Segment: From<(<P as Polygon>::Point, <P as Polygon>::Point)>,
     <P as Polygon>::Point: From<(f64, f64)>,
 {
     for node_index in piece.get_roots() {
-        draw_piece_node(buffer, piece, *node_index, scale, width, height, color);
+        draw_piece_node(buffer, piece, *node_index, scale, width, height, stroke_color, fill_color);
     }
 }
 
@@ -206,53 +190,80 @@ fn draw_piece_node<P: Polygon>(
     scale: f64,
     width: usize,
     height: usize,
-    color: u32,
+    stroke_color: Option<u32>,
+    fill_color: Option<u32>,
 ) where
     <P as Polygon>::Segment: From<(<P as Polygon>::Point, <P as Polygon>::Point)>,
     <P as Polygon>::Point: From<(f64, f64)>,
 {
-    if piece.node_depth(node_index).unwrap() % 2 == 0 {
-        let polygon = piece.get_polygon(node_index).unwrap();
-        let bounding_box = polygon.bounding_box();
-        let (x0, y0) = world_to_screen(
-            bounding_box.min_x.to_f64().unwrap(),
-            bounding_box.min_y.to_f64().unwrap(),
-            scale,
-            height,
-        );
-        let (x1, y1) = world_to_screen(
-            bounding_box.max_x.to_f64().unwrap(),
-            bounding_box.max_y.to_f64().unwrap(),
-            scale,
-            height,
-        );
-        for y_screen in y1..y0 {
-            let start: <P as Polygon>::Point = screen_to_world(x0, y_screen, scale, height).into();
-            let end: <P as Polygon>::Point = screen_to_world(x1, y_screen, scale, height).into();
-            let segment = <P as Polygon>::Segment::from((start, end));
-            let mut intersections = segment.intersects_polygon(polygon);
-            for child_index in piece.iter_children(node_index) {
-                let child_polygon = piece.get_polygon(child_index).unwrap();
-                intersections.extend(segment.intersects_polygon(child_polygon));
-            }
-            intersections.sort_by(|a, b| a.x().partial_cmp(&b.x()).unwrap());
-            let intersections_x: Vec<i32> = intersections.into_iter().map(|p| {
-                world_to_screen(p.x().to_f64().unwrap(), p.y().to_f64().unwrap(), scale, height).0
-            }).collect();
+    if let Some(fill_color) = fill_color {
+        if piece.node_depth(node_index).unwrap() % 2 == 0 {
+            let polygon = piece.get_polygon(node_index).unwrap();
+            let bounding_box = polygon.bounding_box();
+            let (x0, y0) = world_to_screen(
+                bounding_box.min_x.to_f64().unwrap(),
+                bounding_box.min_y.to_f64().unwrap(),
+                scale,
+                height,
+            );
+            let (x1, y1) = world_to_screen(
+                bounding_box.max_x.to_f64().unwrap(),
+                bounding_box.max_y.to_f64().unwrap(),
+                scale,
+                height,
+            );
+            for y_screen in y1..y0 {
+                let start: <P as Polygon>::Point =
+                    screen_to_world(x0 - 1, y_screen, scale, height).into();
+                let end: <P as Polygon>::Point =
+                    screen_to_world(x1 + 1, y_screen, scale, height).into();
+                let segment = <P as Polygon>::Segment::from((start, end));
+                let mut intersections = segment.intersects_polygon(polygon);
+                for child_index in piece.iter_children(node_index) {
+                    let child_polygon = piece.get_polygon(child_index).unwrap();
+                    intersections.extend(segment.intersects_polygon(child_polygon));
+                }
+                intersections.sort_by(|a, b| a.x().partial_cmp(&b.x()).unwrap());
+                let intersections_x: Vec<i32> = intersections
+                    .into_iter()
+                    .map(|p| {
+                        world_to_screen(
+                            p.x().to_f64().unwrap(),
+                            p.y().to_f64().unwrap(),
+                            scale,
+                            height,
+                        )
+                        .0
+                    })
+                    .collect();
 
-            for pair in intersections_x.chunks_exact(2) {
-                if let [fx0, fx1] = pair {
-                    let fx0 = *fx0;
-                    let fx1 = *fx1;
-                    let fy0 = y_screen;
-                    let fy1 = y_screen;
-                    draw_line(buffer, fx0, fy0, fx1, fy1, color, width, height);
+                for pair in intersections_x.chunks_exact(2) {
+                    if let [fx0, fx1] = pair {
+                        let fx0 = *fx0;
+                        let fx1 = *fx1;
+                        let fy0 = y_screen;
+                        let fy1 = y_screen;
+                        draw_line(buffer, fx0, fy0, fx1, fy1, fill_color, width, height);
+                    }
                 }
             }
         }
     }
+    if let Some(stroke_color) = stroke_color {
+        let polygon = piece.get_polygon(node_index).unwrap();
+        draw_polygon(buffer, polygon, stroke_color, scale, width, height);
+    }
 
     for child_index in piece.iter_children(node_index) {
-        draw_piece_node(buffer, piece, child_index, scale, width, height, color);
+        draw_piece_node(
+            buffer,
+            piece,
+            child_index,
+            scale,
+            width,
+            height,
+            stroke_color,
+            fill_color,
+        );
     }
 }
