@@ -83,9 +83,11 @@ pub trait Point2D:
         let a = segment.start();
         let b = segment.end();
         // Vertical line
-        if abs_diff_eq!(a.x(), b.x(), epsilon=Self::value_epsilon()) && abs_diff_eq!(self.x(), a.x(), epsilon=Self::value_epsilon()) {
-            if !abs_diff_eq!(self.y(), b.y(), epsilon=Self::value_epsilon())
-                && !abs_diff_eq!(self.y(), a.y(), epsilon=Self::value_epsilon())
+        if abs_diff_eq!(a.x(), b.x(), epsilon = Self::value_epsilon())
+            && abs_diff_eq!(self.x(), a.x(), epsilon = Self::value_epsilon())
+        {
+            if !abs_diff_eq!(self.y(), b.y(), epsilon = Self::value_epsilon())
+                && !abs_diff_eq!(self.y(), a.y(), epsilon = Self::value_epsilon())
                 && self.y() < b.y().max(a.y())
                 && self.y() > b.y().min(a.y())
             {
@@ -96,9 +98,11 @@ pub trait Point2D:
         }
 
         // Horizontal line
-        if abs_diff_eq!(a.y(), b.y(), epsilon=Self::value_epsilon()) && abs_diff_eq!(self.y(), a.y(), epsilon=Self::value_epsilon()) {
-            if !abs_diff_eq!(self.x(), b.x(), epsilon=Self::value_epsilon())
-                && !abs_diff_eq!(self.x(), a.x(), epsilon=Self::value_epsilon())
+        if abs_diff_eq!(a.y(), b.y(), epsilon = Self::value_epsilon())
+            && abs_diff_eq!(self.y(), a.y(), epsilon = Self::value_epsilon())
+        {
+            if !abs_diff_eq!(self.x(), b.x(), epsilon = Self::value_epsilon())
+                && !abs_diff_eq!(self.x(), a.x(), epsilon = Self::value_epsilon())
                 && self.x() < b.x().max(a.x())
                 && self.x() > b.x().min(a.x())
             {
@@ -118,8 +122,10 @@ pub trait Point2D:
         }
 
         // Exclude end points
-        if (abs_diff_eq!(self.x(), a.x(), epsilon=Self::value_epsilon()) && abs_diff_eq!(self.y(), a.y(), epsilon=Self::value_epsilon()))
-            || (abs_diff_eq!(self.x(), b.x(), epsilon=Self::value_epsilon()) && abs_diff_eq!(self.y(), b.y(), epsilon=Self::value_epsilon()))
+        if (abs_diff_eq!(self.x(), a.x(), epsilon = Self::value_epsilon())
+            && abs_diff_eq!(self.y(), a.y(), epsilon = Self::value_epsilon()))
+            || (abs_diff_eq!(self.x(), b.x(), epsilon = Self::value_epsilon())
+                && abs_diff_eq!(self.y(), b.y(), epsilon = Self::value_epsilon()))
         {
             return false;
         }
@@ -132,13 +138,15 @@ pub trait Point2D:
 
         let dot = (self.x() - a.x()) * (b.x() - a.x()) + (self.y() - a.y()) * (b.y() - a.y());
 
-        if dot < Self::Value::zero() || abs_diff_eq!(dot, Self::Value::zero(), epsilon=Self::value_epsilon()) {
+        if dot < Self::Value::zero()
+            || abs_diff_eq!(dot, Self::Value::zero(), epsilon = Self::value_epsilon())
+        {
             return false;
         }
 
         let len2 = (b.x() - a.x()) * (b.x() - a.x()) + (b.y() - a.y()) * (b.y() - a.y());
 
-        if dot > len2 || abs_diff_eq!(dot, len2, epsilon=Self::value_epsilon()) {
+        if dot > len2 || abs_diff_eq!(dot, len2, epsilon = Self::value_epsilon()) {
             return false;
         }
 
@@ -159,7 +167,9 @@ pub trait Point2D:
             let y1 = seg.end().y();
 
             // on the perimeter of the polygon
-            if abs_diff_eq!(x0, self.x(), epsilon=Self::value_epsilon()) && abs_diff_eq!(y0, self.y(), epsilon=Self::value_epsilon()) {
+            if abs_diff_eq!(x0, self.x(), epsilon = Self::value_epsilon())
+                && abs_diff_eq!(y0, self.y(), epsilon = Self::value_epsilon())
+            {
                 return None;
             }
 
@@ -204,19 +214,21 @@ pub trait Point2D:
         let s2dotnorm = segment.end().dot(&normal);
 
         if !infinite {
-            if ((pdot < s1dot || abs_diff_eq!(pdot, s1dot, epsilon=Self::value_epsilon()))
-                && (pdot < s2dot || abs_diff_eq!(pdot, s2dot, epsilon=Self::value_epsilon())))
-                || ((pdot > s1dot || abs_diff_eq!(pdot, s1dot, epsilon=Self::value_epsilon()))
-                    && (pdot > s2dot || abs_diff_eq!(pdot, s2dot, epsilon=Self::value_epsilon())))
+            if ((pdot < s1dot || abs_diff_eq!(pdot, s1dot, epsilon = Self::value_epsilon()))
+                && (pdot < s2dot || abs_diff_eq!(pdot, s2dot, epsilon = Self::value_epsilon())))
+                || ((pdot > s1dot || abs_diff_eq!(pdot, s1dot, epsilon = Self::value_epsilon()))
+                    && (pdot > s2dot || abs_diff_eq!(pdot, s2dot, epsilon = Self::value_epsilon())))
             {
                 return None; // point doesn't collide with segment, or lies directly on the vertex
             }
-            if (abs_diff_eq!(pdot, s1dot, epsilon=Self::value_epsilon()) && abs_diff_eq!(pdot, s2dot, epsilon=Self::value_epsilon()))
+            if (abs_diff_eq!(pdot, s1dot, epsilon = Self::value_epsilon())
+                && abs_diff_eq!(pdot, s2dot, epsilon = Self::value_epsilon()))
                 && (pdotnorm > s1dotnorm && pdotnorm > s2dotnorm)
             {
                 return Some((pdotnorm - s1dotnorm).min(pdotnorm - s2dotnorm));
             }
-            if (abs_diff_eq!(pdot, s1dot, epsilon=Self::value_epsilon()) && abs_diff_eq!(pdot, s2dot, epsilon=Self::value_epsilon()))
+            if (abs_diff_eq!(pdot, s1dot, epsilon = Self::value_epsilon())
+                && abs_diff_eq!(pdot, s2dot, epsilon = Self::value_epsilon()))
                 && (pdotnorm < s1dotnorm && pdotnorm < s2dotnorm)
             {
                 return Some(-(s1dotnorm - pdotnorm).min(s2dotnorm - pdotnorm));

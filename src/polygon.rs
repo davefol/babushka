@@ -1,6 +1,6 @@
-use crate::{bounding_box::BoundingBox, segment::SegmentSegmentIntersection};
 use crate::point::Point2D;
 use crate::segment::Segment;
+use crate::{bounding_box::BoundingBox, segment::SegmentSegmentIntersection};
 use approx::abs_diff_eq;
 use itertools::Itertools;
 use num_traits::{Float, One, Zero};
@@ -28,7 +28,7 @@ pub trait Polygon: Clone + std::fmt::Debug {
 
     /// Sets the rotation of the polygon.
     fn set_rotation(&mut self, rotation: <<Self as Polygon>::Point as Point2D>::Value);
- 
+
     /// Returns the number of vertices of the polygon.
     fn length(&self) -> usize;
 
@@ -110,10 +110,7 @@ pub trait Polygon: Clone + std::fmt::Debug {
     }
 
     /// Translates the polygon to the point
-    fn translate_to_point(
-        &mut self,
-        point: &Self::Point,
-    ) {
+    fn translate_to_point(&mut self, point: &Self::Point) {
         let offset = self.offset().clone();
         let dx = point.x() - offset.x();
         let dy = point.y() - offset.y();
@@ -121,10 +118,7 @@ pub trait Polygon: Clone + std::fmt::Debug {
     }
 
     /// Translates the bounding box center of the polygon to the point
-    fn translate_center_to_point(
-        &mut self,
-        point: &Self::Point,
-    ) {
+    fn translate_center_to_point(&mut self, point: &Self::Point) {
         let center = self.bounding_box().center();
         self.translate_to_point(&(*point - center));
     }
@@ -202,7 +196,8 @@ pub trait Polygon: Clone + std::fmt::Debug {
                 }
             }
 
-            if let SegmentSegmentIntersection::Intersection(_) =  s01.intersects_segment(&s11, false) {
+            if let SegmentSegmentIntersection::Intersection(_) = s01.intersects_segment(&s11, false)
+            {
                 return true;
             }
         }
@@ -233,7 +228,14 @@ pub trait Polygon: Clone + std::fmt::Debug {
             if let Some(d) = d {
                 // if current distance is less than distance then update
                 if distance.is_none() || d < distance.unwrap() {
-                    if !ignore_negative || d > Zero::zero() || abs_diff_eq!(d, Zero::zero(), epsilon = <<Self as Polygon>::Point as Point2D>::value_epsilon()) {
+                    if !ignore_negative
+                        || d > Zero::zero()
+                        || abs_diff_eq!(
+                            d,
+                            Zero::zero(),
+                            epsilon = <<Self as Polygon>::Point as Point2D>::value_epsilon()
+                        )
+                    {
                         distance = Some(d);
                     }
                 }
@@ -292,7 +294,7 @@ mod tests {
                 Point2D { x: 0.0, y: 4.0 },
             ],
             offset: Point2D { x: 1.0, y: 1.0 },
-            rotation: 0.0
+            rotation: 0.0,
         };
 
         let bbox = square.bounding_box();

@@ -173,13 +173,22 @@ pub fn draw_piece<P: Polygon>(
     width: usize,
     height: usize,
     stroke_color: Option<u32>,
-    fill_color: Option<u32>
+    fill_color: Option<u32>,
 ) where
     <P as Polygon>::Segment: From<(<P as Polygon>::Point, <P as Polygon>::Point)>,
     <P as Polygon>::Point: From<(f64, f64)>,
 {
     for node_index in piece.get_roots() {
-        draw_piece_node(buffer, piece, *node_index, scale, width, height, stroke_color, fill_color);
+        draw_piece_node(
+            buffer,
+            piece,
+            *node_index,
+            scale,
+            width,
+            height,
+            stroke_color,
+            fill_color,
+        );
     }
 }
 

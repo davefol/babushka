@@ -22,7 +22,7 @@ impl<P: Polygon> Piece<P> {
     {
         for node_index in self.graph.node_indices() {
             let polygon = self.graph.node_weight_mut(node_index).unwrap();
-            f(polygon); 
+            f(polygon);
         }
     }
 

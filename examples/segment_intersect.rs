@@ -46,7 +46,7 @@ fn main() {
 
     // Draw intersection point if it exists
     match intersection {
-            SegmentSegmentIntersection::Intersection(point) => {
+        SegmentSegmentIntersection::Intersection(point) => {
             let (x, y) = world_to_screen(point.x(), point.y(), SCALE, HEIGHT);
             draw_line(&mut buffer, x - 5, y, x + 5, y, 0xFFFFFF, WIDTH, HEIGHT);
             draw_line(&mut buffer, x, y - 5, x, y + 5, 0xFFFFFF, WIDTH, HEIGHT);
@@ -63,7 +63,6 @@ fn main() {
             let (x, y) = world_to_screen(point2.x(), point2.y(), SCALE, HEIGHT);
             draw_line(&mut buffer, x - 5, y, x + 5, y, 0xFFFFFF, WIDTH, HEIGHT);
             draw_line(&mut buffer, x, y - 5, x, y + 5, 0xFFFFFF, WIDTH, HEIGHT);
-
         }
         _ => {}
     }

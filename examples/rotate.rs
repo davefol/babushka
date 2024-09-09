@@ -18,20 +18,18 @@ fn main() {
             Point2D { x: 50.0, y: 50.0 },
             Point2D { x: -50.0, y: 50.0 },
         ],
-        offset: Point2D { x: WIDTH as f64 / 2.0 / SCALE, y: HEIGHT as f64 / 2.0 / SCALE },
+        offset: Point2D {
+            x: WIDTH as f64 / 2.0 / SCALE,
+            y: HEIGHT as f64 / 2.0 / SCALE,
+        },
         rotation: 0.0,
     };
 
     let mut buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];
-    let mut window = Window::new(
-        "Rotating Polygon",
-        WIDTH,
-        HEIGHT,
-        WindowOptions::default(),
-    )
-    .unwrap_or_else(|e| {
-        panic!("{}", e);
-    });
+    let mut window = Window::new("Rotating Polygon", WIDTH, HEIGHT, WindowOptions::default())
+        .unwrap_or_else(|e| {
+            panic!("{}", e);
+        });
 
     let start_time = Instant::now();
     while window.is_open() && !window.is_key_down(Key::Escape) {

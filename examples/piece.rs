@@ -46,7 +46,15 @@ fn main() {
     });
 
     buffer.fill(0);
-    draw_piece(&mut buffer, &piece, SCALE, WIDTH, HEIGHT, Some(0xFFFFFF), Some(0x0000FF));
+    draw_piece(
+        &mut buffer,
+        &piece,
+        SCALE,
+        WIDTH,
+        HEIGHT,
+        Some(0xFFFFFF),
+        Some(0x0000FF),
+    );
     while window.is_open() && !window.is_key_down(Key::Escape) {
         window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
     }

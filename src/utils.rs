@@ -35,12 +35,16 @@ where
                 / <P::Value as NumCast>::from(best_cols).unwrap()
                 + (width * (P::Value::one() - reserve_boundary)
                     / (P::Value::one() + P::Value::one()))
-                + width * reserve_boundary / <P::Value as NumCast>::from(best_cols).unwrap() / (P::Value::one() + P::Value::one());
+                + width * reserve_boundary
+                    / <P::Value as NumCast>::from(best_cols).unwrap()
+                    / (P::Value::one() + P::Value::one());
             let y = <P::Value as NumCast>::from(i).unwrap() * height * reserve_boundary
                 / <P::Value as NumCast>::from(best_rows).unwrap()
                 + (height * (P::Value::one() - reserve_boundary)
                     / (P::Value::one() + P::Value::one()))
-                + height * reserve_boundary / <P::Value as NumCast>::from(best_rows).unwrap() / (P::Value::one() + P::Value::one());
+                + height * reserve_boundary
+                    / <P::Value as NumCast>::from(best_rows).unwrap()
+                    / (P::Value::one() + P::Value::one());
             P::from_xy(x, y)
         })
         .take(n)

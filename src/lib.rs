@@ -5,7 +5,7 @@ pub mod parsers;
 pub mod piece;
 pub mod point;
 pub mod polygon;
-pub mod segment;
 #[cfg(feature = "raster")]
 pub mod raster;
+pub mod segment;
 pub mod utils;
