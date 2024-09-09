@@ -16,7 +16,7 @@ Babushka is a Rust library for 2D geometry algorithms, with a focus on efficient
 Add this to your `Cargo.toml`:
 
 [dependencies]
-babushka = "0.1.6"
+babushka = "0.1.7"
 
 ## Documentation
 
