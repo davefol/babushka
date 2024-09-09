@@ -1,9 +1,11 @@
+use crate::point::Point2D as _;
 use super::{Point2D, Segment};
 use crate::no_fit_polygon::ComputeNoFitPolygon;
 #[derive(Clone, Debug)]
 pub struct Polygon {
     pub vertices: Vec<Point2D>,
     pub offset: Point2D,
+    pub rotation: f64,
 }
 
 impl Polygon {
@@ -27,6 +29,7 @@ where
         Self {
             vertices: vertices.into_iter().collect(),
             offset: Point2D { x: 0.0, y: 0.0 },
+            rotation: 0.0,
         }
     }
 }
@@ -60,6 +63,13 @@ impl crate::polygon::Polygon for Polygon {
         self.offset = offset;
     }
 
+    fn rotation(&self) -> f64 {
+        self.rotation
+    }
+    fn set_rotation(&mut self, rotation: f64) {
+        self.rotation = rotation;
+    }
+
     fn length(&self) -> usize {
         self.vertices.len()
     }
@@ -67,6 +77,10 @@ impl crate::polygon::Polygon for Polygon {
 
 impl ComputeNoFitPolygon for Polygon {
     fn get_vertex(&self, index: usize) -> <Self as crate::polygon::Polygon>::Point {
-        self.vertices[index] + self.offset
+        self.vertices[index].rotate(self.rotation) + self.offset
+    }
+
+    fn value_epsilon() -> <<<Self as crate::polygon::Polygon>::Point as crate::point::Point2D>::Value as approx::AbsDiffEq>::Epsilon {
+        1e-9
     }
 }

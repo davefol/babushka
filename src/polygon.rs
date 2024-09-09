@@ -23,6 +23,12 @@ pub trait Polygon: Clone + std::fmt::Debug {
     /// Sets the offset of the polygon.
     fn set_offset(&mut self, offset: Self::Point);
 
+    /// Returns the rotation of the polygon.
+    fn rotation(&self) -> <<Self as Polygon>::Point as Point2D>::Value;
+
+    /// Sets the rotation of the polygon.
+    fn set_rotation(&mut self, rotation: <<Self as Polygon>::Point as Point2D>::Value);
+ 
     /// Returns the number of vertices of the polygon.
     fn length(&self) -> usize;
 
@@ -30,14 +36,14 @@ pub trait Polygon: Clone + std::fmt::Debug {
     /// Coordinates are after any transformations to the polygon.
     fn iter_vertices(&self) -> impl Iterator<Item = Self::Point> {
         self.iter_vertices_local()
-            .map(|vertex| *vertex + self.offset())
+            .map(|vertex| vertex.rotate(self.rotation()) + self.offset())
     }
 
     /// Returns an inorder iterator over the segments of the polygon.
     /// Coordinates are after any transformations to the polygon.
     fn iter_segments(&self) -> impl Iterator<Item = Self::Segment> + Clone {
         self.iter_segments_local()
-            .map(|segment| segment + self.offset())
+            .map(|segment| segment.rotate(self.rotation()) + self.offset())
     }
 
     fn iter_poly_segments_3(
@@ -51,7 +57,7 @@ pub trait Polygon: Clone + std::fmt::Debug {
             .map(|((a, b), c)| (a, b, c))
     }
 
-    /// Returns the local bounding box of the polygon.
+    /// Returns the local axis aligned bounding box of the polygon.
     fn bounding_box_local(&self) -> BoundingBox<<<Self as Polygon>::Point as Point2D>::Value> {
         let mut min_x = self.iter_vertices_local().next().unwrap().x();
         let mut min_y = self.iter_vertices_local().next().unwrap().y();
@@ -71,14 +77,18 @@ pub trait Polygon: Clone + std::fmt::Debug {
         }
     }
 
-    /// Returns the bounding box of the polygon after any transformations.
-    /// BoundingBox<Self::Point::Value>
+    /// Returns the axis aligned bounding box of the polygon after any transformations.
     fn bounding_box(&self) -> BoundingBox<<<Self as Polygon>::Point as Point2D>::Value> {
-        let bounding_box_local = self.bounding_box_local();
-        let min_x = bounding_box_local.min_x + self.offset().x();
-        let min_y = bounding_box_local.min_y + self.offset().y();
-        let max_x = bounding_box_local.max_x + self.offset().x();
-        let max_y = bounding_box_local.max_y + self.offset().y();
+        let mut min_x = self.iter_vertices().next().unwrap().x();
+        let mut min_y = self.iter_vertices().next().unwrap().y();
+        let mut max_x = self.iter_vertices().next().unwrap().x();
+        let mut max_y = self.iter_vertices().next().unwrap().y();
+        for vertex in self.iter_vertices().skip(1) {
+            min_x = min_x.min(vertex.x());
+            min_y = min_y.min(vertex.y());
+            max_x = max_x.max(vertex.x());
+            max_y = max_y.max(vertex.y());
+        }
         BoundingBox {
             min_x,
             min_y,
@@ -152,7 +162,7 @@ pub trait Polygon: Clone + std::fmt::Debug {
             let b2 = s11.end();
             let b3 = s12.end();
 
-            if b1.on_segment(&s01) || abs_diff_eq!(a1.x(), b1.x()) && abs_diff_eq!(a1.y(), b1.y()) {
+            if b1.on_segment(&s01) || abs_diff_eq!(a1, b1) {
                 let b0in = b0.in_polygon(self).unwrap_or(false);
                 let b2in = b2.in_polygon(self).unwrap_or(false);
                 if b0in && !b2in || !b0in && b2in {
@@ -162,7 +172,7 @@ pub trait Polygon: Clone + std::fmt::Debug {
                 }
             }
 
-            if b2.on_segment(&s01) || abs_diff_eq!(a2.x(), b2.x()) && abs_diff_eq!(a2.y(), b2.y()) {
+            if b2.on_segment(&s01) || abs_diff_eq!(a2, b2) {
                 let b1in = b1.in_polygon(self).unwrap_or(false);
                 let b3in = b3.in_polygon(self).unwrap_or(false);
                 if b1in && !b3in || !b1in && b3in {
@@ -172,7 +182,7 @@ pub trait Polygon: Clone + std::fmt::Debug {
                 }
             }
 
-            if a1.on_segment(&s11) || abs_diff_eq!(a1.x(), b2.x()) && abs_diff_eq!(a1.y(), b2.y()) {
+            if a1.on_segment(&s11) || abs_diff_eq!(a1, b2) {
                 let a0in = a0.in_polygon(other).unwrap_or(false);
                 let a2in = a2.in_polygon(other).unwrap_or(false);
                 if a0in && !a2in || !a0in && a2in {
@@ -182,7 +192,7 @@ pub trait Polygon: Clone + std::fmt::Debug {
                 }
             }
 
-            if a2.on_segment(&s11) || abs_diff_eq!(a2.x(), b1.x()) && abs_diff_eq!(a2.y(), b1.y()) {
+            if a2.on_segment(&s11) || abs_diff_eq!(a2, b1) {
                 let a1in = a1.in_polygon(other).unwrap_or(false);
                 let a3in = a3.in_polygon(other).unwrap_or(false);
                 if a1in && !a3in || !a1in && a3in {
@@ -223,7 +233,7 @@ pub trait Polygon: Clone + std::fmt::Debug {
             if let Some(d) = d {
                 // if current distance is less than distance then update
                 if distance.is_none() || d < distance.unwrap() {
-                    if !ignore_negative || d > Zero::zero() || abs_diff_eq!(d, Zero::zero()) {
+                    if !ignore_negative || d > Zero::zero() || abs_diff_eq!(d, Zero::zero(), epsilon = <<Self as Polygon>::Point as Point2D>::value_epsilon()) {
                         distance = Some(d);
                     }
                 }
@@ -282,6 +292,7 @@ mod tests {
                 Point2D { x: 0.0, y: 4.0 },
             ],
             offset: Point2D { x: 1.0, y: 1.0 },
+            rotation: 0.0
         };
 
         let bbox = square.bounding_box();
@@ -297,6 +308,7 @@ mod tests {
                 Point2D { x: 1.5, y: 2.0 },
             ],
             offset: Point2D { x: -1.0, y: -1.0 },
+            rotation: 0.0,
         };
 
         let bbox = triangle.bounding_box();
@@ -319,6 +331,7 @@ mod tests {
                 Point2D { x: 0.0, y: -4.0 },
             ],
             offset: Point2D { x: 0.0, y: 0.0 },
+            rotation: 0.0,
         };
 
         // Test the area of the square
@@ -332,6 +345,7 @@ mod tests {
                 Point2D { x: 2.0, y: -4.0 },
             ],
             offset: Point2D { x: 0.0, y: 0.0 },
+            rotation: 0.0,
         };
 
         // Test the area of the triangle
@@ -346,6 +360,7 @@ mod tests {
                 Point2D { x: 0.0, y: 4.0 },
             ],
             offset: Point2D { x: 0.0, y: 0.0 },
+            rotation: 0.0,
         };
 
         // Test the area of the counter-clockwise polygon (should be negative)
@@ -366,6 +381,7 @@ mod tests {
                 Point2D { x: 0.0, y: 1.0 },
             ],
             offset: Point2D { x: 0.0, y: 0.0 },
+            rotation: 0.0,
         };
 
         let segments: Vec<(Segment, Segment, Segment)> = square.iter_poly_segments_3().collect();
@@ -419,6 +435,7 @@ mod tests {
                 Point2D { x: 0.0, y: 2.0 },
             ],
             offset: Point2D { x: 0.0, y: 0.0 },
+            rotation: 0.0,
         };
 
         let square2 = Polygon {
@@ -429,6 +446,7 @@ mod tests {
                 Point2D { x: 1.0, y: 3.0 },
             ],
             offset: Point2D { x: 0.0, y: 0.0 },
+            rotation: 0.0,
         };
 
         // Test intersecting polygons
@@ -444,6 +462,7 @@ mod tests {
                 Point2D { x: 0.0, y: 1.0 },
             ],
             offset: Point2D { x: 0.0, y: 0.0 },
+            rotation: 0.0,
         };
 
         let square4 = Polygon {
@@ -454,6 +473,7 @@ mod tests {
                 Point2D { x: 2.0, y: 3.0 },
             ],
             offset: Point2D { x: 0.0, y: 0.0 },
+            rotation: 0.0,
         };
 
         // Test non-intersecting polygons
@@ -475,6 +495,7 @@ mod tests {
                 Point2D { x: 1.0, y: 0.0 },
             ],
             offset: Point2D { x: 0.0, y: 0.0 },
+            rotation: 0.0,
         };
         let mut polygon2 = polygon1.clone();
         polygon2.translate(-2.0, 0.0);
@@ -518,6 +539,7 @@ mod tests {
                 Point2D { x: 2.0, y: 0.0 },
             ],
             offset: Point2D { x: 0.0, y: 0.0 },
+            rotation: 0.0,
         };
         let mut polygon2 = polygon1.clone();
         polygon2.translate(3.0, 1.0);

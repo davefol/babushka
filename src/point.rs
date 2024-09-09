@@ -27,12 +27,24 @@ pub trait Point2D:
     fn set_x(&mut self, x: Self::Value);
     fn set_y(&mut self, y: Self::Value);
 
-    fn epsilon() -> Self::Value {
-        Self::Value::epsilon()
-    }
+    fn epsilon() -> Self::Value;
+    fn value_epsilon() -> <Self::Value as AbsDiffEq>::Epsilon;
 
     fn dot(&self, other: &Self) -> Self::Value {
         self.x() * other.x() + self.y() * other.y()
+    }
+
+    fn rotate(&self, angle: Self::Value) -> Self {
+        let cos = angle.cos();
+        let sin = angle.sin();
+        Self::from_xy(
+            self.x() * cos - self.y() * sin,
+            self.x() * sin + self.y() * cos,
+        )
+    }
+
+    fn translate(&self, other: &Self) -> Self {
+        Self::from_xy(self.x() + other.x(), self.y() + other.y())
     }
 
     /// Returns true if the point is within the given distance of the other point.
@@ -49,7 +61,8 @@ pub trait Point2D:
     {
         if abs_diff_eq!(
             self.x() * self.x() + self.y() * self.y(),
-            Self::Value::one()
+            Self::Value::one(),
+            epsilon = Self::value_epsilon()
         ) {
             return Some(self.clone());
         }
@@ -70,9 +83,9 @@ pub trait Point2D:
         let a = segment.start();
         let b = segment.end();
         // Vertical line
-        if abs_diff_eq!(a.x(), b.x()) && abs_diff_eq!(self.x(), a.x()) {
-            if !abs_diff_eq!(self.y(), b.y())
-                && !abs_diff_eq!(self.y(), a.y())
+        if abs_diff_eq!(a.x(), b.x(), epsilon=Self::value_epsilon()) && abs_diff_eq!(self.x(), a.x(), epsilon=Self::value_epsilon()) {
+            if !abs_diff_eq!(self.y(), b.y(), epsilon=Self::value_epsilon())
+                && !abs_diff_eq!(self.y(), a.y(), epsilon=Self::value_epsilon())
                 && self.y() < b.y().max(a.y())
                 && self.y() > b.y().min(a.y())
             {
@@ -83,9 +96,9 @@ pub trait Point2D:
         }
 
         // Horizontal line
-        if abs_diff_eq!(a.y(), b.y()) && abs_diff_eq!(self.y(), a.y()) {
-            if !abs_diff_eq!(self.x(), b.x())
-                && !abs_diff_eq!(self.x(), a.x())
+        if abs_diff_eq!(a.y(), b.y(), epsilon=Self::value_epsilon()) && abs_diff_eq!(self.y(), a.y(), epsilon=Self::value_epsilon()) {
+            if !abs_diff_eq!(self.x(), b.x(), epsilon=Self::value_epsilon())
+                && !abs_diff_eq!(self.x(), a.x(), epsilon=Self::value_epsilon())
                 && self.x() < b.x().max(a.x())
                 && self.x() > b.x().min(a.x())
             {
@@ -105,27 +118,27 @@ pub trait Point2D:
         }
 
         // Exclude end points
-        if (abs_diff_eq!(self.x(), a.x()) && abs_diff_eq!(self.y(), a.y()))
-            || (abs_diff_eq!(self.x(), b.x()) && abs_diff_eq!(self.y(), b.y()))
+        if (abs_diff_eq!(self.x(), a.x(), epsilon=Self::value_epsilon()) && abs_diff_eq!(self.y(), a.y(), epsilon=Self::value_epsilon()))
+            || (abs_diff_eq!(self.x(), b.x(), epsilon=Self::value_epsilon()) && abs_diff_eq!(self.y(), b.y(), epsilon=Self::value_epsilon()))
         {
             return false;
         }
 
         let cross = (self.y() - a.y()) * (b.x() - a.x()) - (self.x() - a.x()) * (b.y() - a.y());
 
-        if cross.abs() > Self::Value::epsilon() {
+        if cross.abs() > Self::epsilon() {
             return false;
         }
 
         let dot = (self.x() - a.x()) * (b.x() - a.x()) + (self.y() - a.y()) * (b.y() - a.y());
 
-        if dot < Self::Value::zero() || abs_diff_eq!(dot, Self::Value::zero()) {
+        if dot < Self::Value::zero() || abs_diff_eq!(dot, Self::Value::zero(), epsilon=Self::value_epsilon()) {
             return false;
         }
 
         let len2 = (b.x() - a.x()) * (b.x() - a.x()) + (b.y() - a.y()) * (b.y() - a.y());
 
-        if dot > len2 || abs_diff_eq!(dot, len2) {
+        if dot > len2 || abs_diff_eq!(dot, len2, epsilon=Self::value_epsilon()) {
             return false;
         }
 
@@ -146,7 +159,7 @@ pub trait Point2D:
             let y1 = seg.end().y();
 
             // on the perimeter of the polygon
-            if abs_diff_eq!(x0, self.x()) && abs_diff_eq!(y0, self.y()) {
+            if abs_diff_eq!(x0, self.x(), epsilon=Self::value_epsilon()) && abs_diff_eq!(y0, self.y(), epsilon=Self::value_epsilon()) {
                 return None;
             }
 
@@ -191,19 +204,19 @@ pub trait Point2D:
         let s2dotnorm = segment.end().dot(&normal);
 
         if !infinite {
-            if ((pdot < s1dot || abs_diff_eq!(pdot, s1dot))
-                && (pdot < s2dot || abs_diff_eq!(pdot, s2dot)))
-                || ((pdot > s1dot || abs_diff_eq!(pdot, s1dot))
-                    && (pdot > s2dot || abs_diff_eq!(pdot, s2dot)))
+            if ((pdot < s1dot || abs_diff_eq!(pdot, s1dot, epsilon=Self::value_epsilon()))
+                && (pdot < s2dot || abs_diff_eq!(pdot, s2dot, epsilon=Self::value_epsilon())))
+                || ((pdot > s1dot || abs_diff_eq!(pdot, s1dot, epsilon=Self::value_epsilon()))
+                    && (pdot > s2dot || abs_diff_eq!(pdot, s2dot, epsilon=Self::value_epsilon())))
             {
                 return None; // point doesn't collide with segment, or lies directly on the vertex
             }
-            if (abs_diff_eq!(pdot, s1dot) && abs_diff_eq!(pdot, s2dot))
+            if (abs_diff_eq!(pdot, s1dot, epsilon=Self::value_epsilon()) && abs_diff_eq!(pdot, s2dot, epsilon=Self::value_epsilon()))
                 && (pdotnorm > s1dotnorm && pdotnorm > s2dotnorm)
             {
                 return Some((pdotnorm - s1dotnorm).min(pdotnorm - s2dotnorm));
             }
-            if (abs_diff_eq!(pdot, s1dot) && abs_diff_eq!(pdot, s2dot))
+            if (abs_diff_eq!(pdot, s1dot, epsilon=Self::value_epsilon()) && abs_diff_eq!(pdot, s2dot, epsilon=Self::value_epsilon()))
                 && (pdotnorm < s1dotnorm && pdotnorm < s2dotnorm)
             {
                 return Some(-(s1dotnorm - pdotnorm).min(s2dotnorm - pdotnorm));
@@ -307,6 +320,7 @@ mod tests {
                 Point2D { x: 0.0, y: 4.0 },
             ],
             offset: Point2D { x: 0.0, y: 0.0 },
+            rotation: 0.0,
         };
 
         // Test point inside the polygon
@@ -333,6 +347,7 @@ mod tests {
                 Point2D { x: 2.0, y: 4.0 },
             ],
             offset: Point2D { x: 0.0, y: 0.0 },
+            rotation: 0.0,
         };
 
         // Test point inside the triangle
@@ -351,6 +366,7 @@ mod tests {
         let invalid_polygon = Polygon {
             vertices: vec![Point2D { x: 0.0, y: 0.0 }, Point2D { x: 1.0, y: 1.0 }],
             offset: Point2D { x: 0.0, y: 0.0 },
+            rotation: 0.0,
         };
         let p8 = Point2D { x: 0.5, y: 0.5 };
         assert_eq!(p8.in_polygon(&invalid_polygon), None);

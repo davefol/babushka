@@ -1,8 +1,10 @@
 use babushka::kernelf64::{Point2D, Polygon};
 use babushka::no_fit_polygon::ComputeNoFitPolygon;
 use babushka::polygon::Polygon as _;
+use babushka::point::Point2D as _;
 use babushka::raster::*;
 use minifb::{Key, Window, WindowOptions};
+use num_traits::Float;
 use std::time::{Duration, Instant};
 
 const WIDTH: usize = 800;
@@ -19,6 +21,8 @@ fn main() {
         Point2D { x: 5.0, y: 1.0 },
         Point2D { x: 5.0, y: 0.0 },
     ]);
+    polygon1.set_rotation(0.0);
+    //polygon1.vertices.iter_mut().for_each(|v| *v = v.rotate(0.5));
     polygon1.translate(5.0, 5.0);
 
     let mut polygon2 = Polygon::from(vec![
@@ -26,9 +30,19 @@ fn main() {
         Point2D { x: 1.0, y: 1.0 },
         Point2D { x: 1.0, y: -1.0 },
     ]);
+    //polygon2.vertices.iter_mut().for_each(|v| *v = v.rotate(0.9));
+    for v in polygon2.vertices.iter_mut() {
+        println!("{:?}", v);
+    }
+    polygon2.set_rotation(0.0);
     polygon2.translate(8.0, 8.0);
 
     let nfp = polygon1.no_fit_polygon(&polygon2, false, false).unwrap();
+    for n in &nfp {
+        for v in n {
+            println!("{:?}", v);
+        }
+    }
     println!("{:?}", nfp);
     let mut nfp_index = 0;
 

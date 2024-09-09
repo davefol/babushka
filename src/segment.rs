@@ -4,11 +4,15 @@ use approx::abs_diff_eq;
 use num_traits::{Float, One, Zero};
 use std::ops::Add;
 
-pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
+pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> + From<(Self::Point, Self::Point)> {
     type Point: Point2D;
 
     fn start(&self) -> &Self::Point;
     fn end(&self) -> &Self::Point;
+
+    fn rotate(&self, angle: <Self::Point as Point2D>::Value) -> Self {
+        Self::from((self.start().rotate(angle), self.end().rotate(angle)))
+    }
 
     /// Returns the intersection of this segment with a polygon.
     /// The intersections are ordered by distance from the start of this segment.
@@ -109,6 +113,8 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
         other: &Self,
         direction: Self::Point,
     ) -> Option<<<Self as Segment>::Point as Point2D>::Value> {
+        
+
         let Some(direction) = direction.normalized() else {
             return None;
         };
@@ -137,7 +143,7 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
         let ef_max = dot_e.max(dot_f);
 
         // segments that will merely touch at one point
-        if abs_diff_eq!(ab_max, ef_min) || abs_diff_eq!(ab_min, ef_max) {
+        if abs_diff_eq!(ab_max, ef_min, epsilon = <<Self as Segment>::Point as Point2D>::value_epsilon()) || abs_diff_eq!(ab_min, ef_max, epsilon = <<Self as Segment>::Point as Point2D>::value_epsilon()) {
             return None;
         }
 
@@ -162,7 +168,7 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
         let cross_abf = (f.y() - a.y()) * (b.x() - a.x()) - (f.x() - a.x()) * (b.y() - a.y());
 
         // lines are colinear
-        if abs_diff_eq!(cross_abe, Zero::zero()) && abs_diff_eq!(cross_abf, Zero::zero()) {
+        if abs_diff_eq!(cross_abe, Zero::zero(), epsilon = <<Self as Segment>::Point as Point2D>::value_epsilon()) && abs_diff_eq!(cross_abf, Zero::zero(), epsilon = <<Self as Segment>::Point as Point2D>::value_epsilon()) {
             let ab_norm =
                 <<Self as Segment>::Point as Point2D>::from_xy(b.y() - a.y(), a.x() - b.x());
             let ef_norm =
@@ -182,7 +188,7 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
             {
                 // normal of AB segment must point in same direction as given direction vector
                 let norm_dot = ab_norm.y() * direction.y() + ab_norm.x() * direction.x();
-                if abs_diff_eq!(norm_dot, Zero::zero()) {
+                if abs_diff_eq!(norm_dot, Zero::zero(), epsilon = <<Self as Segment>::Point as Point2D>::value_epsilon()) {
                     return None;
                 }
                 if norm_dot < Zero::zero() {
@@ -195,17 +201,17 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
         let mut distances = vec![];
 
         // coincident points
-        if abs_diff_eq!(dot_a, dot_e) {
+        if abs_diff_eq!(dot_a, dot_e, epsilon = <<Self as Segment>::Point as Point2D>::value_epsilon()) {
             distances.push(cross_a - cross_e);
-        } else if abs_diff_eq!(dot_a, dot_f) {
+        } else if abs_diff_eq!(dot_a, dot_f, epsilon = <<Self as Segment>::Point as Point2D>::value_epsilon()) {
             distances.push(cross_a - cross_f);
         } else if dot_a > ef_min && dot_a < ef_max {
             let mut d = a.distance_to_segment(other, reverse, false);
             if let Some(dhat) = d {
-                if abs_diff_eq!(dhat, Zero::zero()) {
+                if abs_diff_eq!(dhat, Zero::zero(), epsilon = <<Self as Segment>::Point as Point2D>::value_epsilon()) {
                     let db = b.distance_to_segment(other, reverse, true);
                     if let Some(db) = db {
-                        if db < Zero::zero() || abs_diff_eq!(db * overlap, Zero::zero()) {
+                        if db < Zero::zero() || abs_diff_eq!(db * overlap, Zero::zero(), epsilon = <<Self as Segment>::Point as Point2D>::value_epsilon()) {
                             d = None;
                         }
                     }
@@ -216,17 +222,17 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
             }
         }
 
-        if abs_diff_eq!(dot_b, dot_e) {
+        if abs_diff_eq!(dot_b, dot_e, epsilon = <<Self as Segment>::Point as Point2D>::value_epsilon()) {
             distances.push(cross_b - cross_e);
-        } else if abs_diff_eq!(dot_b, dot_f) {
+        } else if abs_diff_eq!(dot_b, dot_f, epsilon = <<Self as Segment>::Point as Point2D>::value_epsilon()) {
             distances.push(cross_b - cross_f);
         } else if dot_b > ef_min && dot_b < ef_max {
             let mut d = b.distance_to_segment(other, reverse, false);
             if let Some(dhat) = d {
-                if abs_diff_eq!(dhat, Zero::zero()) {
+                if abs_diff_eq!(dhat, Zero::zero(), epsilon = <<Self as Segment>::Point as Point2D>::value_epsilon()) {
                     let da = a.distance_to_segment(other, reverse, true);
                     if let Some(da) = da {
-                        if da < Zero::zero() || abs_diff_eq!(da * overlap, Zero::zero()) {
+                        if da < Zero::zero() || abs_diff_eq!(da * overlap, Zero::zero(), epsilon = <<Self as Segment>::Point as Point2D>::value_epsilon()) {
                             d = None;
                         }
                     }
@@ -240,10 +246,10 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
         if dot_e > ab_min && dot_e < ab_max {
             let mut d = e.distance_to_segment(self, direction, false);
             if let Some(dhat) = d {
-                if abs_diff_eq!(dhat, Zero::zero()) {
+                if abs_diff_eq!(dhat, Zero::zero(), epsilon = <<Self as Segment>::Point as Point2D>::value_epsilon()) {
                     let df = f.distance_to_segment(self, direction, true);
                     if let Some(df) = df {
-                        if df < Zero::zero() || abs_diff_eq!(df * overlap, Zero::zero()) {
+                        if df < Zero::zero() || abs_diff_eq!(df * overlap, Zero::zero(), epsilon = <<Self as Segment>::Point as Point2D>::value_epsilon()) {
                             d = None;
                         }
                     }
@@ -257,10 +263,10 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> {
         if dot_f > ab_min && dot_f < ab_max {
             let mut d = f.distance_to_segment(self, direction, false);
             if let Some(dhat) = d {
-                if abs_diff_eq!(dhat, Zero::zero()) {
+                if abs_diff_eq!(dhat, Zero::zero(), epsilon = <<Self as Segment>::Point as Point2D>::value_epsilon()) {
                     let de = e.distance_to_segment(self, direction, true);
                     if let Some(de) = de {
-                        if de < Zero::zero() || abs_diff_eq!(de * overlap, Zero::zero()) {
+                        if de < Zero::zero() || abs_diff_eq!(de * overlap, Zero::zero(), epsilon = <<Self as Segment>::Point as Point2D>::value_epsilon()) {
                             d = None;
                         }
                     }

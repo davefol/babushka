@@ -30,6 +30,14 @@ impl crate::point::Point2D for Point2D {
     fn set_y(&mut self, y: Self::Value) {
         self.y = y;
     }
+
+    fn epsilon() -> Self::Value {
+        1e-9
+    }
+
+    fn value_epsilon() -> <Self::Value as AbsDiffEq>::Epsilon {
+        1e-9
+    }
 }
 
 impl From<(f64, f64)> for Point2D {
@@ -88,7 +96,7 @@ impl AbsDiffEq<Point2D> for Point2D {
     }
 
     fn default_epsilon() -> Self::Epsilon {
-        f64::default_epsilon()
+        1e-9
     }
 }
 

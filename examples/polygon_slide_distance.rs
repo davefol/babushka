@@ -10,6 +10,7 @@ fn main() {
             Point2D { x: 1.0, y: 0.0 },
         ],
         offset: Point2D { x: 0.0, y: 0.0 },
+        rotation: 0.0,
     };
 
     let mut polygon2 = polygon1.clone();

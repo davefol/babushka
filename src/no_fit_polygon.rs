@@ -1,7 +1,7 @@
 use crate::point::Point2D;
 use crate::polygon::Polygon;
 use crate::segment::Segment;
-use approx::abs_diff_eq;
+use approx::{abs_diff_eq, AbsDiffEq};
 use itertools::Itertools;
 use num_traits::{Float, Zero};
 
@@ -35,6 +35,7 @@ struct Vector<P> {
 pub trait ComputeNoFitPolygon: Polygon {
     /// Return the vertex at the given index after transformations.
     fn get_vertex(&self, index: usize) -> <Self as Polygon>::Point;
+    fn value_epsilon() -> <<<Self as Polygon>::Point as Point2D>::Value as AbsDiffEq>::Epsilon;
 
     fn no_fit_polygon(
         &self,
@@ -43,21 +44,24 @@ pub trait ComputeNoFitPolygon: Polygon {
         search_edges: bool,
     ) -> Option<Vec<Vec<<Self as Polygon>::Point>>> {
         // we will be mucking with the offset of other so clone it
+        let mut self_c = self.clone();
+        self_c.set_offset(Zero::zero());
+
         let mut other = other.clone();
         other.set_offset(Zero::zero());
 
         // keep track of visited vertices
-        let mut self_marked = vec![false; self.length()];
+        let mut self_marked = vec![false; self_c.length()];
         let mut other_marked = vec![false; other.length()];
 
-        let min_self_by_y = self
+        let min_self_by_y = self_c
             .iter_vertices()
             .min_by(|a, b| a.y().partial_cmp(&b.y()).unwrap())
             .unwrap()
             .clone();
 
         let max_other_by_y = other
-            .iter_vertices_local()
+            .iter_vertices()
             .max_by(|a, b| a.y().partial_cmp(&b.y()).unwrap())
             .unwrap()
             .clone();
@@ -65,7 +69,7 @@ pub trait ComputeNoFitPolygon: Polygon {
         let mut start_point = if !inside {
             Some(min_self_by_y - max_other_by_y)
         } else {
-            self.search_start_point(&other, &self_marked, true, None)
+            self_c.search_start_point(&other, &self_marked, true, None)
         };
 
         let mut nfp_list = vec![];
@@ -83,18 +87,18 @@ pub trait ComputeNoFitPolygon: Polygon {
             let mut counter = 0;
 
             // Sanity check, prevent infinite loop
-            while counter < 10 * (self.length() + other.length()) {
+            while counter < 10 * (self_c.length() + other.length()) {
                 touchings = vec![];
 
                 // find touching vertices / edges
                 // we need to carry around indices into self and other
                 // to avoid dealing with lots of mutable refernces
-                for ((idx_self_start, self_segment), (idx_other_start, other_segment)) in self
+                for ((idx_self_start, self_segment), (idx_other_start, other_segment)) in self_c
                     .iter_segments()
                     .enumerate()
                     .cartesian_product(other.iter_segments().enumerate())
                 {
-                    let idx_self_end = if idx_self_start == self.length() - 1 {
+                    let idx_self_end = if idx_self_start == self_c.length() - 1 {
                         0
                     } else {
                         idx_self_start + 1
@@ -129,23 +133,23 @@ pub trait ComputeNoFitPolygon: Polygon {
                 // generate translation vectors from touching vertices / edges
                 let mut vectors: Vec<Vector<<Self as Polygon>::Point>> = vec![];
                 for touching in touchings {
-                    let vertex_self = self.get_vertex(touching.a);
+                    let vertex_self = self_c.get_vertex(touching.a);
                     self_marked[touching.a] = true;
 
                     // adjacent self vertices
                     let prev_self_index = if touching.a == 0 {
-                        self.length() - 1
+                        self_c.length() - 1
                     } else {
                         touching.a - 1
                     };
-                    let next_self_index = if touching.a == self.length() - 1 {
+                    let next_self_index = if touching.a == self_c.length() - 1 {
                         0
                     } else {
                         touching.a + 1
                     };
 
-                    let prev_vertex_self = self.get_vertex(prev_self_index);
-                    let next_vertex_self = self.get_vertex(next_self_index);
+                    let prev_vertex_self = self_c.get_vertex(prev_self_index);
+                    let next_vertex_self = self_c.get_vertex(next_self_index);
 
                     // adjacent B vertices
                     let vertex_other = other.get_vertex(touching.b);
@@ -200,7 +204,7 @@ pub trait ComputeNoFitPolygon: Polygon {
                                 source: PolygonSource::A,
                             });
                             vectors.push(Vector {
-                                point: prev_vertex_self - vertex_self,
+                                point: prev_vertex_self - vertex_other,
                                 start: touching.a,
                                 end: prev_self_index,
                                 source: PolygonSource::A,
@@ -248,7 +252,7 @@ pub trait ComputeNoFitPolygon: Polygon {
                     }
 
                     // i think this should return 0 if a slide is not possible
-                    let mut d = self.slide_distance_on_polygon(&other, vector.point, true);
+                    let mut d = self_c.slide_distance_on_polygon(&other, vector.point, true);
                     let vector_d2 = vector.point.dot(&vector.point);
 
                     if d.is_none() || d.unwrap() * d.unwrap() > vector_d2 {
@@ -263,7 +267,9 @@ pub trait ComputeNoFitPolygon: Polygon {
                     }
                 }
 
-                if translate.is_none() || abs_diff_eq!(max_d, Zero::zero()) {
+                if translate.is_none()
+                    || abs_diff_eq!(max_d, Zero::zero(), epsilon = Self::value_epsilon())
+                {
                     // didn't close the loop, something went wrong here
                     nfp = None;
                     break;
@@ -284,7 +290,12 @@ pub trait ComputeNoFitPolygon: Polygon {
 
                 // trim
                 let vector_length_2 = translate.unwrap().point.dot(&translate.unwrap().point);
-                if max_d * max_d < vector_length_2 && !abs_diff_eq!(max_d * max_d, vector_length_2)
+                if max_d * max_d < vector_length_2
+                    && !abs_diff_eq!(
+                        max_d * max_d,
+                        vector_length_2,
+                        epsilon = Self::value_epsilon()
+                    )
                 {
                     let scale = ((max_d * max_d) / vector_length_2).sqrt();
                     translate = translate.map(|mut translate| {
@@ -340,9 +351,11 @@ pub trait ComputeNoFitPolygon: Polygon {
             }
 
             start_point =
-                self.search_start_point(&other, &self_marked, inside, Some(nfp_list.clone()))
+                self_c.search_start_point(&other, &self_marked, inside, Some(nfp_list.clone()))
         }
-
+        nfp_list
+            .iter_mut()
+            .for_each(|n| n.iter_mut().for_each(|v| *v = v.translate(&self.offset())));
         Some(nfp_list)
     }
 
@@ -407,12 +420,14 @@ pub trait ComputeNoFitPolygon: Polygon {
                     let Some(d) = d else {
                         continue;
                     };
-                    if !(!abs_diff_eq!(d, Zero::zero()) && d > Zero::zero()) {
+                    if !(!abs_diff_eq!(d, Zero::zero(), epsilon = Self::value_epsilon())
+                        && d > Zero::zero())
+                    {
                         continue;
                     }
 
                     let vd2 = v.dot(&v);
-                    if d * d < vd2 && !abs_diff_eq!(d * d, vd2) {
+                    if d * d < vd2 && !abs_diff_eq!(d * d, vd2, epsilon = Self::value_epsilon()) {
                         let vd = v.dot(&v).sqrt();
                         v.set_x(v.x() * d / vd);
                         v.set_y(v.y() * d / vd);
@@ -455,7 +470,7 @@ pub trait ComputeNoFitPolygon: Polygon {
 
         for poly in nfp {
             for point in poly {
-                if abs_diff_eq!(p.x(), point.x()) && abs_diff_eq!(p.y(), point.y()) {
+                if abs_diff_eq!(p, point) {
                     return true;
                 }
             }
@@ -532,6 +547,107 @@ mod tests {
             Point2D { x: 6.0, y: 6.0 },
         ]];
         let nfp = polygon1.no_fit_polygon(&polygon2, true, false);
+        assert_eq!(nfp, Some(expected_nfp));
+    }
+
+    #[test]
+    fn test_no_fit_polygon_one_convex_no_holes_outside_rotated() {
+        use super::ComputeNoFitPolygon;
+        use crate::kernelf64::*;
+        use crate::polygon::Polygon as _;
+        let mut polygon1 = Polygon::from(vec![
+            Point2D { x: 0.0, y: 0.0 },
+            Point2D { x: 2.0, y: 4.0 },
+            Point2D { x: 2.0, y: 2.0 },
+            Point2D { x: 2.9, y: 1.0 },
+            Point2D { x: 5.0, y: 1.0 },
+            Point2D { x: 5.0, y: 0.0 },
+        ]);
+
+        let mut polygon2 = Polygon::from(vec![
+            Point2D { x: 0.0, y: 0.0 },
+            Point2D { x: 1.0, y: 1.0 },
+            Point2D { x: 1.0, y: -1.0 },
+        ]);
+        polygon2.set_rotation(0.9);
+        let expected_nfp = vec![vec![
+            Point2D {
+                x: 0.16171694135681902,
+                y: -1.4049368778981477,
+            },
+            Point2D {
+                x: 5.161716941356819,
+                y: -1.4049368778981477,
+            },
+            Point2D {
+                x: 5.161716941356819,
+                y: -0.4049368778981477,
+            },
+            Point2D { x: 5.0, y: 1.0 },
+            Point2D { x: 2.9, y: 1.0 },
+            Point2D {
+                x: 2.161716941356819,
+                y: 1.8203145096035347,
+            },
+            Point2D {
+                x: 2.161716941356819,
+                y: 2.5950631221018523,
+            },
+            Point2D { x: 2.0, y: 4.0 },
+            Point2D {
+                x: 0.5950631221018523,
+                y: 3.8382830586431806,
+            },
+            Point2D {
+                x: -1.4049368778981477,
+                y: -0.16171694135681935,
+            },
+        ]];
+        let nfp = polygon1.no_fit_polygon(&polygon2, false, false);
+        assert_eq!(nfp, Some(expected_nfp));
+
+        polygon1.set_rotation(0.5);
+        polygon2.set_rotation(0.0);
+        let expected_nfp = vec![vec![
+            Point2D { x: -1.0, y: -1.0 },
+            Point2D {
+                x: 3.387912809451864,
+                y: 1.397127693021015,
+            },
+            Point2D {
+                x: 4.387912809451864,
+                y: 2.397127693021015,
+            },
+            Point2D {
+                x: 3.908487270847661,
+                y: 3.274710254911388,
+            },
+            Point2D {
+                x: 2.908487270847661,
+                y: 4.274710254911388,
+            },
+            Point2D {
+                x: 1.0655638908778777,
+                y: 3.267916623842561,
+            },
+            Point2D {
+                x: 0.3578259797002594,
+                y: 3.516663223515923,
+            },
+            Point2D {
+                x: -0.1625370306360665,
+                y: 4.469181324769897,
+            },
+            Point2D {
+                x: -1.1625370306360665,
+                y: 5.469181324769897,
+            },
+            Point2D {
+                x: -1.1625370306360665,
+                y: 3.469181324769897,
+            },
+        ]];
+        let nfp = polygon1.no_fit_polygon(&polygon2, false, false);
         assert_eq!(nfp, Some(expected_nfp));
     }
 }
