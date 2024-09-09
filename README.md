@@ -11,6 +11,8 @@ Babushka is a Rust library for 2D geometry algorithms, with a focus on efficient
 - No Fit Polygon implementation inspired by SVGNest
 - Rasterizing into `Vec<u32>` using the "raster" feature eg. drawing shapes with holes
 
+![nfp_0](./assets/nfp_0.gif)
+
 ## Installation
 
 Add this to your `Cargo.toml`:
