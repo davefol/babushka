@@ -1,10 +1,8 @@
 use babushka::kernelf64::{Point2D, Polygon};
 use babushka::no_fit_polygon::ComputeNoFitPolygon;
-use babushka::point::Point2D as _;
 use babushka::polygon::Polygon as _;
 use babushka::raster::*;
 use minifb::{Key, Window, WindowOptions};
-use num_traits::Float;
 use std::time::{Duration, Instant};
 
 const WIDTH: usize = 800;
