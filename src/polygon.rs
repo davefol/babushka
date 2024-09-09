@@ -1,4 +1,4 @@
-use crate::bounding_box::BoundingBox;
+use crate::{bounding_box::BoundingBox, segment::SegmentSegmentIntersection};
 use crate::point::Point2D;
 use crate::segment::Segment;
 use approx::abs_diff_eq;
@@ -202,7 +202,7 @@ pub trait Polygon: Clone + std::fmt::Debug {
                 }
             }
 
-            if s01.intersects_segment(&s11, false).is_some() {
+            if let SegmentSegmentIntersection::Intersection(_) =  s01.intersects_segment(&s11, false) {
                 return true;
             }
         }

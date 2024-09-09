@@ -4,6 +4,15 @@ use approx::abs_diff_eq;
 use num_traits::{Float, One, Zero};
 use std::ops::Add;
 
+#[derive(Debug)]
+pub enum SegmentSegmentIntersection<T: Point2D> {
+    None,
+    Equal,
+    Touching(T),
+    Intersection(T),
+    Overlap(T, T),
+}
+
 pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> + From<(Self::Point, Self::Point)> {
     type Point: Point2D;
 
@@ -23,9 +32,22 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> + From<(Self::
         let mut intersections = vec![];
         for segment in other.iter_segments() {
             let intersection = self.intersects_segment(&segment, false);
-            if let Some(intersection) = intersection {
-                intersections.push(intersection);
+            match intersection {
+                SegmentSegmentIntersection::None => {}
+                SegmentSegmentIntersection::Equal => {}
+                SegmentSegmentIntersection::Touching(point) => {
+                    intersections.push(point);
+                }
+                SegmentSegmentIntersection::Intersection(point) => {
+                    intersections.push(point);
+                }
+                SegmentSegmentIntersection::Overlap(start, end) => {
+                    intersections.push(start);
+                    intersections.push(end);
+                }
             }
+            // if let Some(intersection) = intersection {
+            //     intersections.push(intersection);
         }
         // order intersections by distance from self.start()
         intersections.sort_by(|a, b| {
@@ -33,12 +55,18 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> + From<(Self::
             let dist_b = self.start().dot(&(*b - *self.start()));
             dist_a.partial_cmp(&dist_b).unwrap()
         });
+        // remove duplicates
+        intersections.dedup_by(|a, b| abs_diff_eq!(a, b));
         intersections
     }
 
     /// Returns the intersection of this segment with another segment.
     /// Returns None if there is no intersection.
-    fn intersects_segment(&self, other: &Self, infinite: bool) -> Option<Self::Point> {
+    fn intersects_segment(&self, other: &Self, infinite: bool) -> SegmentSegmentIntersection<Self::Point> {
+        if abs_diff_eq!(self.start(), other.start()) && abs_diff_eq!(self.end(), other.end()) {
+            return SegmentSegmentIntersection::Equal;
+        }
+
         let a = self.start();
         let b = self.end();
         let c = other.start();
@@ -46,19 +74,45 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> + From<(Self::
 
         let a1 = b.y() - a.y();
         let b1 = a.x() - b.x();
+        // 2D cross product
         let c1 = b.x() * a.y() - a.x() * b.y();
         let a2 = d.y() - c.y();
         let b2 = c.x() - d.x();
+        // 2D cross product
         let c2 = d.x() * c.y() - c.x() * d.y();
 
+        // Determinant of the position vectors of the two segments
         let denominator = a1 * b2 - a2 * b1;
+
 
         let x = (b1 * c2 - b2 * c1) / denominator;
         let y = (a2 * c1 - a1 * c2) / denominator;
 
-        if !x.is_finite() || !y.is_finite() {
-            return None;
-        };
+        // Segments are parallel
+        if abs_diff_eq!(denominator, Zero::zero(), epsilon = <Self as Segment>::Point::value_epsilon()) {
+            let mut overlaps = vec![];
+            if a.on_segment(other) {
+                overlaps.push(a);
+            }
+            if b.on_segment(other) {
+                overlaps.push(b);
+            }
+            if c.on_segment(self) {
+                overlaps.push(c);
+            }
+            if d.on_segment(self) {
+                overlaps.push(d);
+            }
+
+            if overlaps.len() == 0 {
+                return SegmentSegmentIntersection::None;
+            } else if overlaps.len() == 1 {
+                return SegmentSegmentIntersection::Touching(overlaps[0].clone());
+            } else if overlaps.len() == 2 {
+                println!("Segments overlap");
+                return SegmentSegmentIntersection::Overlap(overlaps[0].clone(), overlaps[1].clone());
+            }
+        }
 
         if !infinite {
             if (a.x() - b.x()).abs() > Self::Point::epsilon()
@@ -68,7 +122,7 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> + From<(Self::
                     x > a.x() || x < b.x()
                 }
             {
-                return None;
+                return SegmentSegmentIntersection::None;
             }
 
             if (a.y() - b.y()).abs() > Self::Point::epsilon()
@@ -78,7 +132,7 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> + From<(Self::
                     y > a.y() || y < b.y()
                 }
             {
-                return None;
+                return SegmentSegmentIntersection::None;
             }
 
             if (c.x() - d.x()).abs() > Self::Point::epsilon()
@@ -88,7 +142,7 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> + From<(Self::
                     x > c.x() || x < d.x()
                 }
             {
-                return None;
+                return SegmentSegmentIntersection::None;
             }
 
             if (c.y() - d.y()).abs() > Self::Point::epsilon()
@@ -98,12 +152,12 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> + From<(Self::
                     y > c.y() || y < d.y()
                 }
             {
-                return None;
+                return SegmentSegmentIntersection::None;
             }
         }
 
         let out = Self::Point::from_xy(x, y);
-        Some(out)
+        SegmentSegmentIntersection::Intersection(out)
     }
 
     /// Returns the distance from this segment to another segment
@@ -288,6 +342,8 @@ pub trait Segment: Clone + Copy + Add<Self::Point, Output = Self> + From<(Self::
 }
 
 mod tests {
+    use crate::segment::SegmentSegmentIntersection;
+
     #[test]
     fn test_segment_intersects_segment() {
         use super::Segment as _;
@@ -310,14 +366,20 @@ mod tests {
 
         // Test intersecting segments
         let intersection = segment1.intersects_segment(&segment2, false);
-        assert!(intersection.is_some());
-        let point = intersection.unwrap();
-        assert!(abs_diff_eq!(point.x(), 2.5));
-        assert!(abs_diff_eq!(point.y(), 2.5));
+        match intersection {
+            SegmentSegmentIntersection::Intersection(point) => {
+                assert!(abs_diff_eq!(point.x(), 2.5));
+                assert!(abs_diff_eq!(point.y(), 2.5));
+            }
+            _ => panic!("Expected intersection, got something else"),
+        }
 
         // Test non-intersecting segments
         let no_intersection = segment1.intersects_segment(&segment3, false);
-        assert!(no_intersection.is_none());
+        match no_intersection {
+            SegmentSegmentIntersection::None => {}
+            _ => panic!("Expected no intersection, got something else"),
+        }
 
         // Test parallel segments
         let segment4 = Segment {
@@ -325,7 +387,13 @@ mod tests {
             end: Point2D { x: 6.0, y: 6.0 },
         };
         let parallel_intersection = segment1.intersects_segment(&segment4, false);
-        assert!(parallel_intersection.is_none());
+        match parallel_intersection {
+            SegmentSegmentIntersection::Overlap(point1, point2) => {
+                assert!(abs_diff_eq!(segment1.end(), &point1));
+                assert!(abs_diff_eq!(segment4.start(), &point2));
+            }
+            _ => panic!("Expected Overlap, got something else"),
+        }
 
         // Test with infinite flag set to true
         let segment5 = Segment {
@@ -333,10 +401,13 @@ mod tests {
             end: Point2D { x: 1.5, y: 2.5 },
         };
         let infinite_intersection = segment1.intersects_segment(&segment5, true);
-        assert!(infinite_intersection.is_some());
-        let infinite_point = infinite_intersection.unwrap();
-        assert!(abs_diff_eq!(infinite_point.x(), 2.5));
-        assert!(abs_diff_eq!(infinite_point.y(), 2.5));
+        match infinite_intersection {
+            SegmentSegmentIntersection::Intersection(infinite_point) => {
+                assert!(abs_diff_eq!(infinite_point.x(), 2.5));
+                assert!(abs_diff_eq!(infinite_point.y(), 2.5));
+            }
+            _ => panic!("Expected SegmentSegmentIntersection::Intersection"),
+        }
     }
 
     #[test]
