@@ -1,0 +1,1 @@
+//! 2D Polygon Clipping library based on Vatti 1992
