@@ -14,11 +14,25 @@ impl Polygon {
     ) -> impl Iterator<Item = &mut <Self as crate::polygon::Polygon>::Point> {
         self.vertices.iter_mut()
     }
+
+    pub fn from_tuples<I>(vertices: I) -> Self
+    where
+        I: IntoIterator<Item = (f64, f64)>,
+    {
+        Self {
+            vertices: vertices
+                .into_iter()
+                .map(|(x, y)| Point2D { x, y })
+                .collect(),
+            offset: Point2D { x: 0.0, y: 0.0 },
+            rotation: 0.0,
+        }
+    }
 }
 
 impl<I> From<I> for Polygon
 where
-    I: IntoIterator<Item = <Self as crate::polygon::Polygon>::Point>,
+    I: IntoIterator<Item = Point2D>,
 {
     /// Creates a new polygon from an iterator over vertices.
     /// Vertices should be in order, clockwise for positive area
