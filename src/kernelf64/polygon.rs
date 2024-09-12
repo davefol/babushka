@@ -1,5 +1,6 @@
 use super::{Point2D, Segment};
 use crate::no_fit_polygon::ComputeNoFitPolygon;
+use crate::clipping::Clippable;
 use crate::point::Point2D as _;
 #[derive(Clone, Debug)]
 pub struct Polygon {
@@ -96,5 +97,11 @@ impl ComputeNoFitPolygon for Polygon {
 
     fn value_epsilon() -> <<<Self as crate::polygon::Polygon>::Point as crate::point::Point2D>::Value as approx::AbsDiffEq>::Epsilon{
         1e-9
+    }
+}
+
+impl Clippable for Polygon {
+    fn get_vertex(&self, index: usize) -> <Self as crate::polygon::Polygon>::Point {
+        self.vertices[index].rotate(self.rotation) + self.offset
     }
 }

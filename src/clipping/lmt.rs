@@ -3,25 +3,30 @@ use itertools::izip;
 
 use super::Clippable;
 
-struct LMTNode<P: Polygon + Clippable> {
-    y: <<P as Polygon>::Point as Point2D>::Value,
-    bounds: Vec<<P as Polygon>::Segment>,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct LocalMinimaTableNode {
+    min: usize,
+    max_forward: usize,
+    max_backward: usize
 }
 
-struct LocalMinimaTable<P: Polygon + Clippable> {
-    nodes: Vec<LMTNode<P>>,
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct LocalMinimaTable {
+    nodes: Vec<LocalMinimaTableNode>
 }
+
 
 /// Represents an edge
 /// This is a linked list of nodes sorted in ascending order of y-coordinate
 /// Each node points to a list of bounds that start at the y coordinate.
 /// Thus each node corresponds to the y coordinate of one or more local minima.
 ///  The LM  is built at the time of forming the bounds, prior to clipping.
-impl<P> LocalMinimaTable<P>
-where
-    P: Polygon + Clippable,
+impl LocalMinimaTable
 {
-    pub fn new(polygon: &P) -> Self {
+    pub fn new<P>(polygon: &P) -> Self 
+    where
+        P: Polygon + Clippable,
+    {
         // find all local minima
         let local_minima_indices: Vec<usize> = izip!(
             0..polygon.length(),
@@ -49,8 +54,8 @@ where
             .map(|(current, _)| current)
             .unwrap();
             
-            // find the next local maxima in the reverse direction
-            let max_reverse = izip!(
+            // find the next local maxima in the backward direction
+            let max_backward = izip!(
                 (0..polygon.length()).rev().cycle().skip(min + 1).take(polygon.length()),
                 (0..polygon.length()).rev().cycle().skip(min + 2).take(polygon.length()),
             )
@@ -64,14 +69,20 @@ where
             .unwrap();
 
 
-            (*min, max_forward, max_reverse)
+            (*min, max_forward, max_backward)
         }).collect();
 
         min_max.sort_by(|a, b| {
             polygon.get_vertex(a.0).y().partial_cmp(&polygon.get_vertex(b.0).y()).unwrap()
         });
 
-        let nodes = vec![];
+        let nodes = min_max.into_iter().map(|(min, max_forward, max_backward)| {
+            LocalMinimaTableNode {
+                min,
+                max_forward,
+                max_backward
+            }
+        }).collect();
 
         Self { nodes }
     }
@@ -80,9 +91,9 @@ where
 mod tests {
     #[test]
     fn test_local_minima_table() {
-        use super::LocalMinimaTable;
+        use super::{LocalMinimaTable, LocalMinimaTableNode};
         use crate::kernelf64::*;
-        Polygon::from_tuples(vec![
+        let polygon = Polygon::from_tuples(vec![
             (0.0, 0.0),
             (3.0, 1.0),
             (4.0, 2.0),
@@ -96,6 +107,25 @@ mod tests {
             (-1.0, 5.0),
             (-2.0, 3.0),
             (-1.0, 1.0),
-        ])
+        ]);
+        let lmt = LocalMinimaTable::new(&polygon);
+
+        let expected_lmt = LocalMinimaTable {
+            nodes: vec![
+                LocalMinimaTableNode {
+                    min: 0,
+                    max_forward: 4,
+                    max_backward: 9
+                },
+                LocalMinimaTableNode {
+                    min: 6,
+                    max_forward: 9,
+                    max_backward: 4,
+                }
+            ]
+        };
+
+        assert_eq!(lmt, expected_lmt);
+
     }
 }
