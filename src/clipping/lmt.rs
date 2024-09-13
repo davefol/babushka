@@ -1,8 +1,13 @@
-use crate::{point::Point2D, polygon::Polygon, segment::Segment};
+use crate::{point::Point2D, polygon::Polygon};
 use itertools::izip;
 
 use super::Clippable;
 
+/// Represents a node in the local minima table.
+/// Each node corresponds to a local minima of the polygon.
+/// The node contains the associated local maxima in 
+/// the forward and backward direction.
+/// Each field is an index into the polygon.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct LocalMinimaTableNode {
     min: usize,
@@ -10,6 +15,8 @@ struct LocalMinimaTableNode {
     max_backward: usize
 }
 
+/// Each node of the local minima table is a local minima of the polygon.
+/// The nodes are sorted in ascending order of y-coordinate.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct LocalMinimaTable {
     nodes: Vec<LocalMinimaTableNode>
