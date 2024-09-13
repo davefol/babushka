@@ -12,7 +12,7 @@ pub trait Clippable: Polygon {
     fn get_vertex(&self, index: usize) -> <Self as Polygon>::Point;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct EdgeNode<P: Point2D> {
     pub vertex: P,
     pub bot: P,
@@ -32,13 +32,13 @@ struct EdgeNode<P: Point2D> {
     pub next_bound: Option<Box<EdgeNode<P>>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct VertexNode<P: Point2D> {
     pub point: P,
     pub next: Option<Box<VertexNode<P>>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct PolygonNode<P: Point2D> {
     pub active: bool,
     pub hole: bool,
@@ -93,4 +93,30 @@ enum PolygonType {
     Subj,
 }
 
-
+fn add_edge_to_aet<P: Point2D>(
+    aet: &mut Option<Box<EdgeNode<P>>>,
+    mut edge: Box<EdgeNode<P>>,
+    prev: Option<Box<EdgeNode<P>>>,
+) {
+    if aet.is_none() {
+        // Append edge to the AET
+        *aet = Some(edge);
+        if let Some(aet_edge) = aet.as_mut() {
+            aet_edge.prev = prev;
+            aet_edge.next = None;
+        }
+    } else {
+        // Primary sort on xb
+        let aet_edge = aet.as_mut().unwrap();
+        if edge.xb < aet_edge.xb {
+            // Insert edge before current AET edge
+            edge.prev = prev;
+            edge.next = Some(aet_edge.clone());
+            aet_edge.prev = Some(edge.clone());
+            *aet = Some(edge);
+        } else {
+            // Recursively add to AET
+            add_edge_to_aet(&mut aet_edge.clone().next, edge, Some(aet_edge.clone()));
+        }
+    }
+}
