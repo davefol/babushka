@@ -95,14 +95,6 @@ typedef struct                      /* Tristrip set structure            */
 ===========================================================================
 */
 
-void gpc_read_polygon        (FILE            *infile_ptr, 
-                              int              read_hole_flags,
-                              gpc_polygon     *polygon);
-
-void gpc_write_polygon       (FILE            *outfile_ptr,
-                              int              write_hole_flags,
-                              gpc_polygon     *polygon);
-
 void gpc_add_contour         (gpc_polygon     *polygon,
                               gpc_vertex_list *contour,
                               int              hole);
