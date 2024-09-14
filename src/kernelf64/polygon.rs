@@ -1,4 +1,5 @@
 use super::{Point2D, Segment};
+use crate::clip::Clippable;
 use crate::no_fit_polygon::ComputeNoFitPolygon;
 use crate::point::Point2D as _;
 #[derive(Clone, Debug)]
@@ -98,3 +99,5 @@ impl ComputeNoFitPolygon for Polygon {
         1e-9
     }
 }
+
+impl Clippable for Polygon {}

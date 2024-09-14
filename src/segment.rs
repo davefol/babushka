@@ -431,8 +431,8 @@ mod tests {
 
     #[test]
     fn test_segment_intersects_segment() {
-        use super::SegmentSegmentIntersection;
         use super::Segment as _;
+        use super::SegmentSegmentIntersection;
         use crate::kernelf64::Point2D;
         use crate::kernelf64::Segment;
         use crate::point::Point2D as _;
