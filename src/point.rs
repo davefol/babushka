@@ -1,7 +1,7 @@
 use approx::{abs_diff_eq, AbsDiffEq};
 use num_traits::{Float, One, Zero};
 use std::iter::Sum;
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
 
 use crate::polygon::Polygon;
 use crate::segment::Segment;
@@ -14,11 +14,12 @@ pub trait Point2D:
     + Neg<Output = Self>
     + Div<Self::Value, Output = Self>
     + Mul<Self::Value, Output = Self>
+    + AddAssign<Self::Value>
     + Zero
     + AbsDiffEq
     + std::fmt::Debug
 {
-    type Value: Float + AbsDiffEq + Copy + Sum + std::fmt::Debug;
+    type Value: Float + AbsDiffEq + Copy + Sum + std::fmt::Debug + AddAssign;
 
     fn x(&self) -> Self::Value;
     fn y(&self) -> Self::Value;

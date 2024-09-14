@@ -1,6 +1,6 @@
 use approx::AbsDiffEq;
 use num_traits::Zero;
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Point2D {
@@ -117,5 +117,12 @@ impl Mul<f64> for Point2D {
             x: self.x * other,
             y: self.y * other,
         }
+    }
+}
+
+impl AddAssign<f64> for Point2D {
+    fn add_assign(&mut self, other: f64) {
+        self.x += other;
+        self.y += other;
     }
 }
