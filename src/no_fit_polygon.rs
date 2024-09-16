@@ -71,6 +71,7 @@ pub trait ComputeNoFitPolygon: Polygon {
         } else {
             self_c.search_start_point(&other, &self_marked, true, None)
         };
+        println!("inside: {:?}, start_point: {:?}", inside, start_point);
 
         let mut nfp_list = vec![];
 
