@@ -2,9 +2,10 @@ use std::f64::consts::PI;
 
 use babushka::clip::{ClipOp, Clippable};
 use babushka::kernelf64::{Point2D, Polygon};
+use babushka::multi_polygon::MultiPolygon;
 use babushka::point::Point2D as _;
 use babushka::polygon::Polygon as _;
-use babushka::raster::draw_polygon;
+use babushka::raster::{draw_multi_polygon, draw_polygon};
 use minifb::{Key, Window, WindowOptions};
 const WIDTH: usize = 800;
 const HEIGHT: usize = 600;
@@ -31,20 +32,12 @@ fn main() {
         rotation: PI / 2.0,
     };
 
-    println!("Subject polygon vertices");
-    for point in square.iter_vertices() {
-        println!("{:?}", point)
-    }
+    let mut union = square.clip_polygon(&triangle, ClipOp::Xor).unwrap();
+    let holes = union.split_off(1);
+    let outer = union.pop().unwrap();
+    let union = MultiPolygon::new(outer, holes);
 
-    println!("Clip polygon vertices");
-    for point in triangle.iter_vertices() {
-        println!("{:?}", point)
-    }
 
-    let union = square.clip_polygon(&triangle, ClipOp::Union).unwrap();
-    for point in union.iter_vertices() {
-        println!("{:?}", point)
-    }
 
     let mut buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];
     buffer.fill(0);
@@ -53,12 +46,12 @@ fn main() {
             panic!("{}", e);
         });
 
-    // Clear the buffer
 
-    // Draw the bin
+
+
     draw_polygon(&mut buffer, &square, 0xFFFF00, SCALE, WIDTH, HEIGHT);
     draw_polygon(&mut buffer, &triangle, 0xFF00FF, SCALE, WIDTH, HEIGHT);
-    draw_polygon(&mut buffer, &union, 0x00FFFF, SCALE, WIDTH, HEIGHT);
+    draw_multi_polygon(&mut buffer, &union, SCALE, WIDTH, HEIGHT, Some(0xFFFFFF), Some(0x00FFFF));
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
         window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();

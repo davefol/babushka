@@ -1,5 +1,6 @@
 use crate::polygon::Polygon;
 
+#[derive(Debug, Clone)]
 pub struct MultiPolygon<P: Polygon> {
     outer: P,
     holes: Vec<P>,

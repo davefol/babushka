@@ -7,6 +7,7 @@ use approx::{abs_diff_eq, AbsDiffEq};
 use font8x8::UnicodeFonts;
 use num_traits::ToPrimitive;
 use petgraph::graph::NodeIndex;
+use itertools::ChunkBy;
 
 pub fn world_to_screen(x: f64, y: f64, scale: f64, height: usize) -> (i32, i32) {
     ((x * scale) as i32, height as i32 - (y * scale) as i32)
@@ -306,178 +307,75 @@ pub fn draw_multi_polygon<P: Polygon>(
             scale,
             height,
         );
+
         for y_screen in y1..y0 {
+            let mut intersections = vec![];
             let start: <P as Polygon>::Point =
                 screen_to_world(x0 - 1, y_screen, scale, height).into();
             let end: <P as Polygon>::Point =
                 screen_to_world(x1 + 1, y_screen, scale, height).into();
-            let segment = <P as Polygon>::Segment::from((start, end));
-            let mut intersections = vec![];
-            let mut vertex_intersections = vec![];
-            for p_seg in polygon.iter_segments() {
-                match segment.intersects_segment(&p_seg, false) {
-                    SegmentSegmentIntersection::Intersection(p) => {
-                        if p.abs_diff_eq(
-                            p_seg.start(),
-                            <<P as Polygon>::Point as AbsDiffEq>::default_epsilon(),
-                        ) {
-                            if p.y() > p_seg.end().y() {
-                                vertex_intersections.push((p, true));
-                            } else {
-                                vertex_intersections.push((p, false));
-                            }
-                        } else if p.abs_diff_eq(
-                            p_seg.end(),
-                            <<P as Polygon>::Point as AbsDiffEq>::default_epsilon(),
-                        ) {
-                            if p.y() > p_seg.start().y() {
-                                vertex_intersections.push((p, true));
-                            } else {
-                                vertex_intersections.push((p, false));
-                            }
-                        } else {
-                            intersections.push(p);
-                        }
-                    }
-                    SegmentSegmentIntersection::Touching(p) => {
-                        if p.abs_diff_eq(
-                            p_seg.start(),
-                            <<P as Polygon>::Point as AbsDiffEq>::default_epsilon(),
-                        ) {
-                            if p.y() > p_seg.end().y() {
-                                vertex_intersections.push((p, true));
-                            } else {
-                                vertex_intersections.push((p, false));
-                            }
-                        } else {
-                            if p.y() > p_seg.start().y() {
-                                vertex_intersections.push((p, true));
-                            } else {
-                                vertex_intersections.push((p, false));
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            vertex_intersections.sort_by(|a, b| a.0.x().partial_cmp(&b.0.x()).unwrap());
-            // find vertex intersections that are duplicates
-            for window in vertex_intersections.windows(2) {
-                if abs_diff_eq!(window[0].0, window[1].0) {
-                    if window[0].1 == window[1].1 {
-                        intersections.push(window[0].0);
-                    }
-                } else {
-                    intersections.push(window[0].0);
-                }
-            }
-            if let Some(x) = vertex_intersections.last() {
-                intersections.push(x.0);
-            }
-            intersections.sort_by(|a, b| a.x().partial_cmp(&b.x()).unwrap());
-            if intersections.len() > 2 {
-                println!("intersections: {:?}", intersections);
-            }
 
-            // intersections.extend(
-            //     vertex_intersections
-            //         .chunks_exact(2)
-            //         .filter(|chunk| chunk[0].1 != chunk[1].1)
-            //         .map(|chunk| chunk[0].0),
-            // );
+            let scanline = <P as Polygon>::Segment::from((start, end));
+            for edge in polygon.iter_segments() {
+                match scanline.intersects_segment(&edge, false) {
+                    SegmentSegmentIntersection::Equal => {}
+                    SegmentSegmentIntersection::None => {}
+                    SegmentSegmentIntersection::Overlap(_, _) => {}
+                    SegmentSegmentIntersection::Touching(p) => {
+                        let above = if abs_diff_eq!(p, edge.start()) {
+                            p.y() > edge.end().y()
+                        } else {
+                            p.y() > edge.start().y()
+                        };
+                        intersections.push((p, above));
+                    }
+                    SegmentSegmentIntersection::Intersection(p) => {
+                        let above = if abs_diff_eq!(p, edge.start()) {
+                            p.y() > edge.end().y()
+                        } else {
+                            p.y() > edge.start().y()
+                        };
+                        intersections.push((p, above));
+                    }
+                }
+            }
 
             for hole_polygon in multi_polygon.holes() {
-                let mut vertex_intersections = vec![];
-                for p_seg in hole_polygon.iter_segments() {
-                    match segment.intersects_segment(&p_seg, false) {
-                        SegmentSegmentIntersection::Intersection(p) => {
-                            if p.abs_diff_eq(
-                                p_seg.start(),
-                                <<P as Polygon>::Point as AbsDiffEq>::default_epsilon(),
-                            ) {
-                                if p.y() > p_seg.end().y() {
-                                    vertex_intersections.push((p, true));
-                                } else {
-                                    vertex_intersections.push((p, false));
-                                }
-                            } else if p.abs_diff_eq(
-                                p_seg.end(),
-                                <<P as Polygon>::Point as AbsDiffEq>::default_epsilon(),
-                            ) {
-                                if p.y() > p_seg.start().y() {
-                                    vertex_intersections.push((p, true));
-                                } else {
-                                    vertex_intersections.push((p, false));
-                                }
-                            } else {
-                                intersections.push(p);
-                            }
-                        }
+                for edge in hole_polygon.iter_segments() {
+                    match scanline.intersects_segment(&edge, false) {
+                        SegmentSegmentIntersection::Equal => {}
+                        SegmentSegmentIntersection::None => {}
+                        SegmentSegmentIntersection::Overlap(_, _) => {}
                         SegmentSegmentIntersection::Touching(p) => {
-                            if p.abs_diff_eq(
-                                p_seg.start(),
-                                <<P as Polygon>::Point as AbsDiffEq>::default_epsilon(),
-                            ) {
-                                if p.y() > p_seg.end().y() {
-                                    vertex_intersections.push((p, true));
-                                } else {
-                                    vertex_intersections.push((p, false));
-                                }
+                            let above = if abs_diff_eq!(p, edge.start()) {
+                                p.y() > edge.end().y()
                             } else {
-                                if p.y() > p_seg.start().y() {
-                                    vertex_intersections.push((p, true));
-                                } else {
-                                    vertex_intersections.push((p, false));
-                                }
-                            }
+                                p.y() > edge.start().y()
+                            };
+                            intersections.push((p, above));
                         }
-                        _ => {}
-                    }
-                }
-                vertex_intersections.sort_by(|a, b| a.0.x().partial_cmp(&b.0.x()).unwrap());
-                let mut marked = vec![false; vertex_intersections.len()];
-                for (i, window) in vertex_intersections.windows(2).enumerate() {
-                    if abs_diff_eq!(window[0].0, window[1].0) {
-                        if window[0].1 != window[1].1 {
-                            marked[i] = true;
-                            println!("marked: {:?}", i);
+                        SegmentSegmentIntersection::Intersection(p) => {
+                            let above = if abs_diff_eq!(p, edge.start()) {
+                                p.y() > edge.end().y()
+                            } else {
+                                p.y() > edge.start().y()
+                            };
+                            intersections.push((p, above));
                         }
                     }
                 }
-                for (i, p) in vertex_intersections.iter().enumerate() {
-                    if marked[i] {
-                        intersections.push(p.0);
-                    }
-                }
-                // for window in vertex_intersections.windows(2) {
-                //     if abs_diff_eq!(window[0].0, window[1].0) {
-                //         if window[0].1 == window[1].1 {
-                //             intersections.push(window[0].0);
-                //         }
-                //     } else {
-                //         intersections.push(window[0].0);
-                //     }
-                // }
-                if vertex_intersections.len() > 0 {
-                    println!("vertex_intersections: {:?}", vertex_intersections);
-                }
-                // intersections.extend(
-                //     vertex_intersections
-                //         .chunks_exact(2)
-                //         .filter(|chunk| chunk[0].1 != chunk[1].1)
-                //         .map(|chunk| chunk[0].0),
-                // );
             }
-            intersections.sort_by(|a, b| a.x().partial_cmp(&b.x()).unwrap());
-            if intersections.len() == 3 {
+            intersections.sort_by(|a, b| a.0.x().partial_cmp(&b.0.x()).unwrap());
+            if intersections.len() % 2 != 0 {
                 println!("intersections: {:?}", intersections);
             }
+            intersections.dedup_by(|a, b| abs_diff_eq!(a.0, b.0) && (a.1 != b.1));
             let intersections_x: Vec<i32> = intersections
                 .iter()
                 .map(|p| {
                     world_to_screen(
-                        p.x().to_f64().unwrap(),
-                        p.y().to_f64().unwrap(),
+                        p.0.x().to_f64().unwrap(),
+                        p.0.y().to_f64().unwrap(),
                         scale,
                         height,
                     )
@@ -485,22 +383,13 @@ pub fn draw_multi_polygon<P: Polygon>(
                 })
                 .collect();
 
-            let debug_color = if intersections.len() == 2 {
-               0xFF0000 
-            } else if intersections.len() == 3{
-                0x00FF00
-            } else if intersections.len() == 4 {
-                0x0000FF
-            } else {
-                0xFFFF00
-            };
             for pair in intersections_x.chunks_exact(2) {
                 if let [fx0, fx1] = pair {
                     let fx0 = *fx0;
                     let fx1 = *fx1;
                     let fy0 = y_screen;
                     let fy1 = y_screen;
-                    draw_line(buffer, fx0, fy0, fx1, fy1, debug_color, width, height);
+                    draw_line(buffer, fx0, fy0, fx1, fy1, fill_color, width, height);
                 }
             }
         }
@@ -508,5 +397,9 @@ pub fn draw_multi_polygon<P: Polygon>(
     if let Some(stroke_color) = stroke_color {
         let polygon = multi_polygon.outer();
         draw_polygon(buffer, polygon, stroke_color, scale, width, height);
+
+        for polygon in multi_polygon.holes() {
+            draw_polygon(buffer, polygon, stroke_color, scale, width, height);
+        }
     }
 }

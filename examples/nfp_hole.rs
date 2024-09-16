@@ -11,7 +11,7 @@ const SCALE: f64 = 1.0;
 // const ANIMATION_INTERVAL: Duration = Duration::from_millis(500);
 
 fn main() {
-    let n_points = 16;
+    let n_points = 8;
     let mut outer = Polygon::from((0..n_points).map(|i| {
         let angle = 2.0 * std::f64::consts::PI * i as f64 / n_points as f64;
         let x = 100.0 * angle.cos();

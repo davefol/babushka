@@ -73,6 +73,8 @@ pub trait Segment:
             return SegmentSegmentIntersection::Equal;
         }
 
+
+
         let a = self.start();
         let b = self.end();
         let c = other.start();
@@ -123,6 +125,16 @@ pub trait Segment:
                     overlaps[1].clone(),
                 );
             }
+        }
+
+        if self.start().on_segment(other) {
+            return SegmentSegmentIntersection::Touching(*self.start());
+        } else if self.end().on_segment(other) {
+            return SegmentSegmentIntersection::Touching(*self.end())
+        } else if other.start().on_segment(self) {
+            return SegmentSegmentIntersection::Touching(*other.start());
+        } else if other.end().on_segment(self) {
+            return SegmentSegmentIntersection::Touching(*other.end());
         }
 
         if !infinite {

@@ -98,7 +98,7 @@ pub enum ClipOp {
 }
 
 pub trait Clippable: Polygon + From<Vec<Self::Point>> {
-    fn clip_polygon(&self, other: &Self, op: ClipOp) -> Result<Self> {
+    fn clip_polygon(&self, other: &Self, op: ClipOp) -> Result<Vec<Self>> {
         let set_operation = match op {
             ClipOp::Union => gpc_op_GPC_UNION,
             ClipOp::Intersection => gpc_op_GPC_INT,
@@ -123,11 +123,13 @@ pub trait Clippable: Polygon + From<Vec<Self::Point>> {
         Ok(Self::from_gpc_polygon(result_gpc))
     }
 
-    fn from_gpc_polygon(gpc_poly: gpc_polygon) -> Self {
-        let mut points: Vec<<Self as Polygon>::Point> = Vec::new();
+    fn from_gpc_polygon(gpc_poly: gpc_polygon) -> Vec<Self> {
+        let mut contours = vec![];
 
+        // TODO: Output a poylgon for each contour
         // Iterate over contours
         for contour_index in 0..gpc_poly.num_contours {
+            let mut points: Vec<<Self as Polygon>::Point> = Vec::new();
             unsafe {
                 let vertex_list = *gpc_poly.contour.add(contour_index as usize);
 
@@ -143,10 +145,11 @@ pub trait Clippable: Polygon + From<Vec<Self::Point>> {
                     points.push(point);
                 }
             }
+            contours.push(Self::from(points));
+
         }
 
-        // Build your polygon from the points
-        Self::from(points)
+        contours
     }
 }
 
@@ -203,7 +206,7 @@ mod tests {
 
         let union = square.clip_polygon(&triangle, ClipOp::Union).unwrap();
 
-        let expected = Polygon {
+        let expected = vec![Polygon {
             vertices: vec![
                 Point2D { x: 50.0, y: 15.0 },
                 Point2D { x: 40.0, y: 22.5 },
@@ -216,10 +219,12 @@ mod tests {
             ],
             offset: Point2D::from_xy(0.0, 0.0),
             rotation: 0.0,
-        };
+        }];
 
-        for (a, b) in union.iter_vertices().zip(expected.iter_vertices()) {
-            assert_eq!(a, b);
+        for (a, b) in union.iter().zip(expected.iter()) {
+            for (j, k) in a.iter_vertices().zip(b.iter_vertices()) {
+                assert_eq!(j, k);  
+            }
         }
     }
 }

@@ -1,7 +1,7 @@
 use babushka::kernelf64::{Point2D, Polygon as KernelPolygon};
-use babushka::polygon_graph::PolygonGraph;
+use babushka::multi_polygon::MultiPolygon;
 use babushka::polygon::Polygon;
-use babushka::raster::draw_polygon_graph;
+use babushka::raster::{draw_multi_polygon, draw_polygon_graph};
 use minifb::{Key, Window, WindowOptions};
 
 const WIDTH: usize = 800;
@@ -25,11 +25,8 @@ fn main() {
     ]);
 
     // Create a piece with the rectangle as the root
-    let mut piece = PolygonGraph::new(rectangle);
+    let mut piece = MultiPolygon::new(rectangle, vec![triangle]);
 
-    // Add the triangular hole as a child of the rectangle
-    let rectangle_index = piece.get_roots()[0];
-    piece.add_child(rectangle_index, triangle);
 
     piece.for_each_polygon(|p| p.translate(2.0, 1.5));
 
@@ -46,7 +43,7 @@ fn main() {
     });
 
     buffer.fill(0);
-    draw_polygon_graph(
+    draw_multi_polygon(
         &mut buffer,
         &piece,
         SCALE,
