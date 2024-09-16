@@ -1,8 +1,8 @@
 use babushka::kernelf64::{Point2D, Polygon};
 use babushka::parsers::terashima::{parse_terashima, TerashimaInstance};
-use babushka::piece::Piece;
+use babushka::multi_polygon::MultiPolygon;
 use babushka::polygon::Polygon as _;
-use babushka::raster::{draw_piece, draw_polygon, draw_text};
+use babushka::raster::{draw_multi_polygon, draw_polygon, draw_polygon_graph, draw_text};
 use babushka::utils::spread_grid;
 use minifb::{Key, Window, WindowOptions};
 use std::fs::File;
@@ -30,7 +30,7 @@ fn main() {
     {
         instance.pieces[idx].translate_center_to_point(&location);
     }
-    let pieces: Vec<Piece<_>> = instance.pieces.into_iter().map(|p| Piece::new(p)).collect();
+    let pieces: Vec<MultiPolygon<_>> = instance.pieces.into_iter().map(|p| MultiPolygon::new(p, vec![])).collect();
 
     let mut buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];
     buffer.fill(0);
@@ -47,7 +47,7 @@ fn main() {
     // Draw the polygons
     for (i, piece) in pieces.iter().enumerate() {
         let fill_color = 0xFF0000 | ((i as u32 * 50) << 8) | (i as u32 * 30);
-        draw_piece(
+        draw_multi_polygon(
             &mut buffer,
             piece,
             SCALE,

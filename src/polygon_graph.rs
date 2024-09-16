@@ -1,16 +1,16 @@
 use crate::polygon::Polygon;
 use petgraph::graph::{Graph, NodeIndex};
 
-pub struct Piece<P: Polygon> {
+pub struct PolygonGraph<P: Polygon> {
     graph: Graph<P, ()>,
     roots: Vec<NodeIndex>,
 }
 
-impl<P: Polygon> Piece<P> {
+impl<P: Polygon> PolygonGraph<P> {
     pub fn new(root_polygon: P) -> Self {
         let mut graph = Graph::new();
         let root = graph.add_node(root_polygon);
-        Piece {
+        PolygonGraph {
             graph,
             roots: vec![root],
         }
@@ -36,7 +36,7 @@ impl<P: Polygon> Piece<P> {
             .into_iter()
             .map(|polygon| graph.add_node(polygon))
             .collect::<Vec<_>>();
-        Piece { graph, roots }
+        PolygonGraph { graph, roots }
     }
 
     pub fn add_root(&mut self, polygon: P) -> NodeIndex {
@@ -126,7 +126,7 @@ mod tests {
         ]);
 
         // Create a piece with the rectangle as the root
-        let mut piece = Piece::new(rectangle);
+        let mut piece = PolygonGraph::new(rectangle);
 
         // Add the triangular hole as a child of the rectangle
         let rectangle_index = piece.get_roots()[0];

@@ -118,7 +118,6 @@ pub trait Segment:
             } else if overlaps.len() == 1 {
                 return SegmentSegmentIntersection::Touching(overlaps[0].clone());
             } else if overlaps.len() == 2 {
-                println!("Segments overlap");
                 return SegmentSegmentIntersection::Overlap(
                     overlaps[0].clone(),
                     overlaps[1].clone(),

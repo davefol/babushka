@@ -3,10 +3,11 @@ pub mod clip;
 pub mod kernelf64;
 pub mod no_fit_polygon;
 pub mod parsers;
-pub mod piece;
+pub mod polygon_graph;
 pub mod point;
 pub mod polygon;
 #[cfg(feature = "raster")]
 pub mod raster;
 pub mod segment;
 pub mod utils;
+pub mod multi_polygon;
