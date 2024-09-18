@@ -71,13 +71,13 @@ pub trait ComputeNoFitPolygon: Polygon {
         } else {
             self_c.search_start_point(&other, &self_marked, true, None)
         };
-        if cfg!(debug_assertions) {
-            println!(
-                "startpoint: {}, {}",
-                &start_point.unwrap().x().to_f64().unwrap(),
-                &start_point.unwrap().y().to_f64().unwrap()
-            );
-        }
+        // if cfg!(debug_assertions) {
+        //     println!(
+        //         "startpoint: {}, {}",
+        //         &start_point.unwrap().x().to_f64().unwrap(),
+        //         &start_point.unwrap().y().to_f64().unwrap()
+        //     );
+        // }
 
         let mut nfp_list = vec![];
 
@@ -94,13 +94,13 @@ pub trait ComputeNoFitPolygon: Polygon {
             let mut counter = 0;
 
             // Sanity check, prevent infinite loop
-            if cfg!(debug_assertions) {
-                println!(
-                    "Reference point: {}, {}",
-                    &reference.x().to_f64().unwrap(),
-                    &reference.y().to_f64().unwrap()
-                );
-            }
+            // if cfg!(debug_assertions) {
+            //     println!(
+            //         "Reference point: {}, {}",
+            //         &reference.x().to_f64().unwrap(),
+            //         &reference.y().to_f64().unwrap()
+            //     );
+            // }
             while counter < 10 * (self_c.length() + other.length()) {
                 touchings = vec![];
 
@@ -122,17 +122,17 @@ pub trait ComputeNoFitPolygon: Polygon {
                     } else {
                         idx_other_start + 1
                     };
-                    if cfg!(debug_assertions) {
-                        println!(
-                            "A[{}]: {}, {}, B[{}]: {}, {}",
-                            idx_self_start,
-                            &self_segment.start().x().to_f64().unwrap(),
-                            &self_segment.start().y().to_f64().unwrap(),
-                            idx_other_start,
-                            &other_segment.start().x().to_f64().unwrap(),
-                            &other_segment.start().y().to_f64().unwrap(),
-                        );
-                    }
+                    // if cfg!(debug_assertions) {
+                    //     println!(
+                    //         "A[{}]: {}, {}, B[{}]: {}, {}",
+                    //         idx_self_start,
+                    //         &self_segment.start().x().to_f64().unwrap(),
+                    //         &self_segment.start().y().to_f64().unwrap(),
+                    //         idx_other_start,
+                    //         &other_segment.start().x().to_f64().unwrap(),
+                    //         &other_segment.start().y().to_f64().unwrap(),
+                    //     );
+                    // }
 
                     if abs_diff_eq!(self_segment.start(), other_segment.start()) {
                         touchings.push(Touching {
@@ -157,22 +157,22 @@ pub trait ComputeNoFitPolygon: Polygon {
 
                 // generate translation vectors from touching vertices / edges
                 let mut vectors: Vec<Vector<<Self as Polygon>::Point>> = vec![];
-                if cfg!(debug_assertions) {
-                    println!("Touching:");
-                }
+                // if cfg!(debug_assertions) {
+                //     println!("Touching:");
+                // }
                 for touching in touchings {
-                    if cfg!(debug_assertions) {
-                        println!(
-                            "\tTouching: {{ type: {}, A: {}, B: {} }}",
-                            match touching.tt {
-                                TouchingType::A => 0,
-                                TouchingType::B => 1,
-                                TouchingType::C => 2,
-                            },
-                            touching.a,
-                            touching.b
-                        )
-                    }
+                    // if cfg!(debug_assertions) {
+                    //     println!(
+                    //         "\tTouching: {{ type: {}, A: {}, B: {} }}",
+                    //         match touching.tt {
+                    //             TouchingType::A => 0,
+                    //             TouchingType::B => 1,
+                    //             TouchingType::C => 2,
+                    //         },
+                    //         touching.a,
+                    //         touching.b
+                    //     )
+                    // }
                     
                     let vertex_self = self_c.get_vertex(touching.a);
                     self_marked[touching.a] = true;
@@ -270,15 +270,15 @@ pub trait ComputeNoFitPolygon: Polygon {
                 let mut translate = None::<Vector<<Self as Polygon>::Point>>;
                 let mut max_d = <<Self as Polygon>::Point as Point2D>::Value::zero();
 
-                if cfg!(debug_assertions) {
-                    for vector in &vectors {
-                        println!(
-                            "Vector: {}, {}",
-                            &vector.point.x().to_f64().unwrap(),
-                            &vector.point.y().to_f64().unwrap(),
-                        );
-                    }
-                }
+                // if cfg!(debug_assertions) {
+                //     for vector in &vectors {
+                //         println!(
+                //             "Vector: {}, {}",
+                //             &vector.point.x().to_f64().unwrap(),
+                //             &vector.point.y().to_f64().unwrap(),
+                //         );
+                //     }
+                // }
                 for vector in vectors {
                     if vector.point.is_zero() {
                         continue;
@@ -310,15 +310,15 @@ pub trait ComputeNoFitPolygon: Polygon {
                     }
 
                     if let Some(d) = d {
-                        if cfg!(debug_assertions) {
-                            println!(
-                                "**** d: {}, max_d: {}, vector: {}, {}",
-                                d.to_f64().unwrap(),
-                                max_d.to_f64().unwrap(),
-                                &vector.point.x().to_f64().unwrap(),
-                                &vector.point.y().to_f64().unwrap(),
-                            );
-                        }
+                        // if cfg!(debug_assertions) {
+                        //     println!(
+                        //         "**** d: {}, max_d: {}, vector: {}, {}",
+                        //         d.to_f64().unwrap(),
+                        //         max_d.to_f64().unwrap(),
+                        //         &vector.point.x().to_f64().unwrap(),
+                        //         &vector.point.y().to_f64().unwrap(),
+                        //     );
+                        // }
                         if d > max_d {
                             max_d = d;
                             translate = Some(vector);
@@ -326,15 +326,15 @@ pub trait ComputeNoFitPolygon: Polygon {
                     }
                 }
 
-                if cfg!(debug_assertions) {
-                    if let Some(ref translate) = translate {
-                        println!(
-                            "translate: {}, {}",
-                            &translate.point.x().to_f64().unwrap(),
-                            &translate.point.y().to_f64().unwrap(),
-                        );
-                    }
-                }
+                // if cfg!(debug_assertions) {
+                //     if let Some(ref translate) = translate {
+                //         println!(
+                //             "translate: {}, {}",
+                //             &translate.point.x().to_f64().unwrap(),
+                //             &translate.point.y().to_f64().unwrap(),
+                //         );
+                //     }
+                // }
 
                 if translate.is_none()
                     || abs_diff_eq!(max_d, Zero::zero(), epsilon = Self::value_epsilon())
@@ -442,43 +442,43 @@ pub trait ComputeNoFitPolygon: Polygon {
         // since we are iterating over every segment, the index i will be the index of
         // the starting point of that segment
         for (i, self_segment) in self.iter_segments().enumerate() {
-            if cfg!(debug_assertions) {
-                println!("\t\touter loop: {i}");
-            }
+            // if cfg!(debug_assertions) {
+            //     println!("\t\touter loop: {i}");
+            // }
             if !self_marked[i] {
                 self_marked[i] = true;
 
                 for j in 0..other.length() {
-                    if cfg!(debug_assertions) {
-                        println!("\t\tinner loop: {j}");
-                    }
+                    // if cfg!(debug_assertions) {
+                    //     println!("\t\tinner loop: {j}");
+                    // }
                     other.set_offset(*self_segment.start() - (other.get_vertex(j) - other.offset()));
 
                     let mut other_inside = None::<bool>;
                     // TODO: This kinda looks suspicious
                     for kp in other.iter_vertices() {
-                        if cfg!(debug_assertions) {
-                            println!(
-                                "\t\tkp: {}, {}",
-                                &kp.x().to_f64().unwrap(),
-                                &kp.y().to_f64().unwrap(),
-                            );
-                        }
+                        // if cfg!(debug_assertions) {
+                        //     println!(
+                        //         "\t\tkp: {}, {}",
+                        //         &kp.x().to_f64().unwrap(),
+                        //         &kp.y().to_f64().unwrap(),
+                        //     );
+                        // }
                         if let Some(in_poly) = kp.in_polygon(self) {
                             other_inside = Some(in_poly);
                             break;
                         }
                     }
-                    if cfg!(debug_assertions) {
-                        println!(
-                            "\t\tBinside: {}",
-                            match other_inside {
-                                Some(true) => "true",
-                                Some(false) => "false",
-                                None => "null"
-                            }
-                        )
-                    }
+                    // if cfg!(debug_assertions) {
+                    //     println!(
+                    //         "\t\tBinside: {}",
+                    //         match other_inside {
+                    //             Some(true) => "true",
+                    //             Some(false) => "false",
+                    //             None => "null"
+                    //         }
+                    //     )
+                    // }
 
                     // A and B are the same
                     let Some(mut other_inside) = other_inside else {
@@ -490,21 +490,21 @@ pub trait ComputeNoFitPolygon: Polygon {
                         && !self.intersects_polygon(&other)
                         && !Self::in_nfp(&start_point, &nfp)
                     {
-                        if cfg!(debug_assertions) {
-                            println!("\t\tfirst early return");
-                        }
+                        // if cfg!(debug_assertions) {
+                        //     println!("\t\tfirst early return");
+                        // }
                         return Some(start_point);
                     }
 
                     // Slide other along vector
                     let mut v = *self_segment.end() - *self_segment.start();
-                    if cfg!(debug_assertions) {
-                        println!(
-                            "\t\tv: {}, {}",
-                            v.x().to_f64().unwrap(),
-                            v.y().to_f64().unwrap(),
-                        );
-                    }
+                    // if cfg!(debug_assertions) {
+                    //     println!(
+                    //         "\t\tv: {}, {}",
+                    //         v.x().to_f64().unwrap(),
+                    //         v.y().to_f64().unwrap(),
+                    //     );
+                    // }
                     let d1 = self.project_distance_on_polygon(&other, v);
                     let d2 = other.project_distance_on_polygon(self, -v);
 
@@ -517,35 +517,35 @@ pub trait ComputeNoFitPolygon: Polygon {
                     } else {
                         Some(d1.unwrap().min(d2.unwrap()))
                     };
-                    if cfg!(debug_assertions) {
-                        println!(
-                            "\t\td: {}, d1: {}, d2: {}",
-                            match d { Some(d) => d.to_f64().unwrap(), None => std::f64::NAN},
-                            match d1 { Some(d) => d.to_f64().unwrap(), None => std::f64::NAN},
-                            match d2 { Some(d) => d.to_f64().unwrap(), None => std::f64::NAN},
-                        );
-                    } 
+                    // if cfg!(debug_assertions) {
+                    //     println!(
+                    //         "\t\td: {}, d1: {}, d2: {}",
+                    //         match d { Some(d) => d.to_f64().unwrap(), None => std::f64::NAN},
+                    //         match d1 { Some(d) => d.to_f64().unwrap(), None => std::f64::NAN},
+                    //         match d2 { Some(d) => d.to_f64().unwrap(), None => std::f64::NAN},
+                    //     );
+                    // } 
 
                     // only slide until no longer negative
 					// console.log(`d !== null: ${d !== null}, !almosteq: ${!_almostEqual(d, 0)}, d > 0: ${d}`);
-                    if cfg!(debug_assertions) {
-                        println!(
-                            "\t\td !== null: {}, !almosteq: {}, d > 0: {}",
-                            &d.is_some(),
-                            match d {
-                                Some(d) => format!("{}", !abs_diff_eq!(d, Zero::zero(), epsilon = Self::value_epsilon())),
-                                None => "null".to_string()
-                            },
-                            match d {
-                                Some(d) => format!("{}", d > Zero::zero()),
-                                None => "null".to_string()
-                            }
-                        );
-                    }
+                    // if cfg!(debug_assertions) {
+                    //     println!(
+                    //         "\t\td !== null: {}, !almosteq: {}, d > 0: {}",
+                    //         &d.is_some(),
+                    //         match d {
+                    //             Some(d) => format!("{}", !abs_diff_eq!(d, Zero::zero(), epsilon = Self::value_epsilon())),
+                    //             None => "null".to_string()
+                    //         },
+                    //         match d {
+                    //             Some(d) => format!("{}", d > Zero::zero()),
+                    //             None => "null".to_string()
+                    //         }
+                    //     );
+                    // }
                     let Some(d) = d else {
-                        if cfg!(debug_assertions) {
-                            println!("continue");
-                        }
+                        // if cfg!(debug_assertions) {
+                        //     println!("continue");
+                        // }
                         continue;
                     };
                     if !(!abs_diff_eq!(d, Zero::zero(), epsilon = Self::value_epsilon())
@@ -570,9 +570,9 @@ pub trait ComputeNoFitPolygon: Polygon {
                             break;
                         }
                     }
-                    if cfg!(debug_assertions) {
-                        println!("\t\tsuspect Binside: {}", other_inside);
-                    }
+                    // if cfg!(debug_assertions) {
+                    //     println!("\t\tsuspect Binside: {}", other_inside);
+                    // }
                     start_point = other.offset();
                     if (other_inside && inside || !other_inside && !inside)
                         && self.intersects_polygon(&other)

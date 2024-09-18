@@ -32,11 +32,11 @@ fn main() {
         let y = 50.0 * angle.sin();
         Point2D::from_xy(x, y)
     }));
-    for v in inner.iter_mut_vertices_local() {
-        v.x += 400.0;
-        v.y += 300.0
-    }
-    // inner.set_offset(Point2D::from_xy(400.0, 300.0));
+    // for v in inner.iter_mut_vertices_local() {
+    //     v.x += 400.0;
+    //     v.y += 300.0
+    // }
+    inner.set_offset(Point2D::from_xy(400.0, 300.0));
 
     let piece_0 = MultiPolygon::new(outer, vec![inner]);
 
@@ -46,17 +46,17 @@ fn main() {
         Point2D { x: 20.0, y: 20.0 },
         Point2D { x: 0.0, y: 20.0 },
     ]);
-    for v in square.iter_mut_vertices_local() {
-        v.x += 390.0;
-        v.y += 290.0;
-    }
-    // square.set_offset(Point2D::from_xy(390.0, 290.0));
+    // for v in square.iter_mut_vertices_local() {
+    //     v.x += 390.0;
+    //     v.y += 290.0;
+    // }
+    square.set_offset(Point2D::from_xy(390.0, 290.0));
     // square.set_rotation(PI / 3.0);
     let piece_1 = MultiPolygon::new(square, vec![]);
 
     
     let mut nfp_list = vec![];
-    // nfp_list.extend(piece_0.outer().no_fit_polygon(piece_1.outer(), false, false).unwrap());
+    nfp_list.extend(piece_0.outer().no_fit_polygon(piece_1.outer(), false, false).unwrap());
     for hole in piece_0.holes() {
         nfp_list.extend(hole.no_fit_polygon(piece_1.outer(), true, false).unwrap());
     }

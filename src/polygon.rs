@@ -264,21 +264,21 @@ pub trait Polygon: Clone + std::fmt::Debug {
 
                 // project point, ignore edge boundaries
                 let d = other_vertex.distance_to_segment(&self_segment, direction, false);
-                if cfg!(debug_assertions) {
-                    println!(
-                        "\t\t\td: {}, self_segment: ({}, {}) -> ({}, {}), direction: {}, {}",
-                        match d {
-                            Some(d) => format!("{}", d.to_f64().unwrap()),
-                            None => format!("null"),
-                        },
-                        &self_segment.start().x().to_f64().unwrap(),
-                        &self_segment.start().y().to_f64().unwrap(),
-                        &self_segment.end().x().to_f64().unwrap(),
-                        &self_segment.end().y().to_f64().unwrap(),
-                        &direction.x().to_f64().unwrap(),
-                        &direction.y().to_f64().unwrap(),
-                    )
-                }
+                // if cfg!(debug_assertions) {
+                //     println!(
+                //         "\t\t\td: {}, self_segment: ({}, {}) -> ({}, {}), direction: {}, {}",
+                //         match d {
+                //             Some(d) => format!("{}", d.to_f64().unwrap()),
+                //             None => format!("null"),
+                //         },
+                //         &self_segment.start().x().to_f64().unwrap(),
+                //         &self_segment.start().y().to_f64().unwrap(),
+                //         &self_segment.end().x().to_f64().unwrap(),
+                //         &self_segment.end().y().to_f64().unwrap(),
+                //         &direction.x().to_f64().unwrap(),
+                //         &direction.y().to_f64().unwrap(),
+                //     )
+                // }
 
                 if d.is_some() && (min_projection.is_none() || d.unwrap() < min_projection.unwrap())
                 {

@@ -1,13 +1,18 @@
+use std::path::PathBuf;
+
 use crate::multi_polygon::MultiPolygon;
 use crate::point::Point2D;
 use crate::polygon::Polygon;
 use crate::polygon_graph::PolygonGraph;
 use crate::segment::{Segment, SegmentSegmentIntersection};
+use anyhow::Result;
 use approx::{abs_diff_eq, AbsDiffEq};
 use font8x8::UnicodeFonts;
-use num_traits::ToPrimitive;
+use gif::{Encoder, Frame, Repeat};
+use itertools::{ChunkBy, Itertools};
+use num_traits::{Float, Num, NumCast, One, ToPrimitive};
 use petgraph::graph::NodeIndex;
-use itertools::ChunkBy;
+use std::fs::File;
 
 pub fn world_to_screen(x: f64, y: f64, scale: f64, height: usize) -> (i32, i32) {
     ((x * scale) as i32, height as i32 - (y * scale) as i32)
@@ -402,4 +407,70 @@ pub fn draw_multi_polygon<P: Polygon>(
             draw_polygon(buffer, polygon, stroke_color, scale, width, height);
         }
     }
+}
+
+pub fn create_gif<F>(
+    output_path: PathBuf,
+    width: usize,
+    height: usize,
+    scale: f64,
+    frame_delay: u16,
+    num_frames: usize,
+    mut frame_builder: F,
+) -> Result<()>
+where
+    F: FnMut(usize, &mut Vec<u32>) -> (),
+{
+    // Create the output file
+    let mut image = File::create(output_path)?;
+
+    // Initialize the GIF encoder
+    let mut encoder = Encoder::new(&mut image, width as u16, height as u16, &[])?;
+    encoder.set_repeat(Repeat::Infinite)?;
+
+    // Initialize the buffer (RGBA)
+    let mut buffer: Vec<u32> = vec![0; width * height];
+
+    for frame_index in 0..num_frames {
+        buffer.fill(0); // Clear the buffer
+
+        // Let the user-defined closure build the frame
+        frame_builder(frame_index, &mut buffer);
+
+        // Convert buffer to RGB format
+        let mut frame_buffer = vec![0u8; width * height * 3];
+        for (i, pixel) in buffer.iter().enumerate() {
+            frame_buffer[i * 3] = ((pixel >> 16) & 0xFF) as u8; // Red
+            frame_buffer[i * 3 + 1] = ((pixel >> 8) & 0xFF) as u8; // Green
+            frame_buffer[i * 3 + 2] = (pixel & 0xFF) as u8; // Blue
+        }
+
+        // Create and write the frame
+        let mut frame = Frame::from_rgb(width as u16, height as u16, &frame_buffer);
+        frame.delay = frame_delay;
+        encoder.write_frame(&frame)?;
+
+        println!("Frame {} generated", frame_index + 1);
+    }
+
+    println!("GIF animation saved successfully.");
+    Ok(())
+}
+
+pub fn interpolate_contour<I, P>(contour: I, interval: P::Value) -> Vec<P>
+where
+    I: IntoIterator<Item = P>,
+    P: Point2D,
+{
+    contour.into_iter().tuple_windows().map(|(a, b)| {
+        let slope = b - a;
+        let magnitude = slope.dot(&slope).sqrt();
+        let n = magnitude / interval;
+        let increment = <P as Point2D>::Value::one() / n;
+
+        (0..n.round().to_usize().unwrap()).map(move |x| {
+            let scale = <<P as Point2D>::Value as NumCast>::from(x).unwrap() * increment;
+            a + slope * scale
+        })
+    }).flatten().collect()
 }
