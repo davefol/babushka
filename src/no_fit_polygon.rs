@@ -127,10 +127,10 @@ pub trait ComputeNoFitPolygon: Polygon {
                             "A[{}]: {}, {}, B[{}]: {}, {}",
                             idx_self_start,
                             &self_segment.start().x().to_f64().unwrap(),
-                            &self_segment.start().x().to_f64().unwrap(),
+                            &self_segment.start().y().to_f64().unwrap(),
                             idx_other_start,
                             &other_segment.start().x().to_f64().unwrap(),
-                            &other_segment.start().x().to_f64().unwrap(),
+                            &other_segment.start().y().to_f64().unwrap(),
                         );
                     }
 
@@ -270,14 +270,16 @@ pub trait ComputeNoFitPolygon: Polygon {
                 let mut translate = None::<Vector<<Self as Polygon>::Point>>;
                 let mut max_d = <<Self as Polygon>::Point as Point2D>::Value::zero();
 
-                for vector in vectors {
-                    if cfg!(debug_assertions) {
+                if cfg!(debug_assertions) {
+                    for vector in &vectors {
                         println!(
                             "Vector: {}, {}",
                             &vector.point.x().to_f64().unwrap(),
                             &vector.point.y().to_f64().unwrap(),
                         );
                     }
+                }
+                for vector in vectors {
                     if vector.point.is_zero() {
                         continue;
                     }
@@ -292,7 +294,7 @@ pub trait ComputeNoFitPolygon: Polygon {
 
                             if (vector_unit.y() * prev_unit.x() - vector_unit.x() * prev_unit.y())
                                 .abs()
-                                < Float::epsilon()
+                                < Self::Point::epsilon()
                             {
                                 continue;
                             }
@@ -308,6 +310,15 @@ pub trait ComputeNoFitPolygon: Polygon {
                     }
 
                     if let Some(d) = d {
+                        if cfg!(debug_assertions) {
+                            println!(
+                                "**** d: {}, max_d: {}, vector: {}, {}",
+                                d.to_f64().unwrap(),
+                                max_d.to_f64().unwrap(),
+                                &vector.point.x().to_f64().unwrap(),
+                                &vector.point.y().to_f64().unwrap(),
+                            );
+                        }
                         if d > max_d {
                             max_d = d;
                             translate = Some(vector);
@@ -318,7 +329,7 @@ pub trait ComputeNoFitPolygon: Polygon {
                 if cfg!(debug_assertions) {
                     if let Some(ref translate) = translate {
                         println!(
-                            "Translate: {}, {}",
+                            "translate: {}, {}",
                             &translate.point.x().to_f64().unwrap(),
                             &translate.point.y().to_f64().unwrap(),
                         );
