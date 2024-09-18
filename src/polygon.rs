@@ -3,7 +3,7 @@ use crate::segment::Segment;
 use crate::{bounding_box::BoundingBox, segment::SegmentSegmentIntersection};
 use approx::abs_diff_eq;
 use itertools::Itertools;
-use num_traits::{Float, One, Zero};
+use num_traits::{Float, One, ToPrimitive, Zero};
 
 pub trait Polygon: Clone + std::fmt::Debug {
     type Point: Point2D;
@@ -254,15 +254,31 @@ pub trait Polygon: Clone + std::fmt::Debug {
         for other_vertex in other.iter_vertices() {
             let mut min_projection = None;
             for self_segment in self.iter_segments() {
+				// if (Math.abs((s2.y - s1.y) * direction.x - (s2.x - s1.x) * direction.y) < TOL) {
                 if ((self_segment.end().y() - self_segment.start().y()) * direction.x()
-                    - (self_segment.end().x() - self_segment.start().x()) * direction.y())
-                    < Float::epsilon()
+                    - (self_segment.end().x() - self_segment.start().x()) * direction.y()).abs()
+                    < Self::Point::epsilon()
                 {
                     continue;
                 }
 
                 // project point, ignore edge boundaries
                 let d = other_vertex.distance_to_segment(&self_segment, direction, false);
+                if cfg!(debug_assertions) {
+                    println!(
+                        "\t\t\td: {}, self_segment: ({}, {}) -> ({}, {}), direction: {}, {}",
+                        match d {
+                            Some(d) => format!("{}", d.to_f64().unwrap()),
+                            None => format!("null"),
+                        },
+                        &self_segment.start().x().to_f64().unwrap(),
+                        &self_segment.start().y().to_f64().unwrap(),
+                        &self_segment.end().x().to_f64().unwrap(),
+                        &self_segment.end().y().to_f64().unwrap(),
+                        &direction.x().to_f64().unwrap(),
+                        &direction.y().to_f64().unwrap(),
+                    )
+                }
 
                 if d.is_some() && (min_projection.is_none() || d.unwrap() < min_projection.unwrap())
                 {
