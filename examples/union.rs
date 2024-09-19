@@ -36,8 +36,6 @@ fn main() {
     let outer = union.pop().unwrap();
     let union = MultiPolygon::new(outer, holes);
 
-
-
     let mut buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];
     buffer.fill(0);
     let mut window =
@@ -45,12 +43,17 @@ fn main() {
             panic!("{}", e);
         });
 
-
-
-
     draw_polygon(&mut buffer, &square, 0xFFFF00, SCALE, WIDTH, HEIGHT);
     draw_polygon(&mut buffer, &triangle, 0xFF00FF, SCALE, WIDTH, HEIGHT);
-    draw_multi_polygon(&mut buffer, &union, SCALE, WIDTH, HEIGHT, Some(0xFFFFFF), Some(0x00FFFF));
+    draw_multi_polygon(
+        &mut buffer,
+        &union,
+        SCALE,
+        WIDTH,
+        HEIGHT,
+        Some(0xFFFFFF),
+        Some(0x00FFFF),
+    );
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
         window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();

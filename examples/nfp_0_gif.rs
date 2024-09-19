@@ -1,9 +1,9 @@
+use anyhow::Result;
 use babushka::kernelf64::{Point2D, Polygon};
 use babushka::no_fit_polygon::ComputeNoFitPolygon;
 use babushka::polygon::Polygon as _;
 use babushka::raster::*;
 use std::path::PathBuf;
-use anyhow::Result;
 
 const WIDTH: usize = 800;
 const HEIGHT: usize = 600;

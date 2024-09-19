@@ -60,9 +60,10 @@ fn main() -> anyhow::Result<()> {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("assets/nfp_1.gif");
 
-    let nfp_interp: Vec<Vec<Point2D>> = nfp_list.into_iter().map(|x| {
-        interpolate_contour(x.into_iter(), 10.0)
-    }).collect();
+    let nfp_interp: Vec<Vec<Point2D>> = nfp_list
+        .into_iter()
+        .map(|x| interpolate_contour(x.into_iter(), 10.0))
+        .collect();
     let num_frames = nfp_interp.iter().map(|x| x.len()).sum();
     println!("num_frames: {}", num_frames);
     create_gif(
@@ -86,7 +87,12 @@ fn main() -> anyhow::Result<()> {
                 draw_polygon(buffer, &nfp, 0xFF0000, SCALE, WIDTH, HEIGHT);
             }
             // let mut piece_1 = piece_1.clone();
-            let offset = nfp_interp.iter().flatten().skip(frame_index).next().unwrap();
+            let offset = nfp_interp
+                .iter()
+                .flatten()
+                .skip(frame_index)
+                .next()
+                .unwrap();
             piece_1.for_each_polygon(|polygon| {
                 polygon.set_offset(*offset);
             });
@@ -99,7 +105,6 @@ fn main() -> anyhow::Result<()> {
                 Some(0xFFFFFF),
                 Some(0xFF00FF),
             );
-
         },
     )
 }

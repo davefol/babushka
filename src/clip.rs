@@ -146,7 +146,6 @@ pub trait Clippable: Polygon + From<Vec<Self::Point>> {
                 }
             }
             contours.push(Self::from(points));
-
         }
 
         contours
@@ -223,7 +222,7 @@ mod tests {
 
         for (a, b) in union.iter().zip(expected.iter()) {
             for (j, k) in a.iter_vertices().zip(b.iter_vertices()) {
-                assert_eq!(j, k);  
+                assert_eq!(j, k);
             }
         }
     }

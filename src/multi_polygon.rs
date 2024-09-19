@@ -47,16 +47,16 @@ impl<P: Polygon + ComputeNoFitPolygon> MultiPolygon<P> {
 }
 
 mod tests {
-    use approx::assert_abs_diff_eq;
 
     #[test]
     fn test_no_fit_polygon() {
         use super::MultiPolygon;
+        use crate::kernelf64::*;
         use crate::point::Point2D as _;
         use crate::polygon::Polygon as _;
         use itertools::izip;
-        use crate::kernelf64::*;
-        use std::f64::consts::PI;
+
+        use approx::assert_abs_diff_eq;
 
         let n_points = 16;
         let mut outer = Polygon::from((0..n_points).map(|i| {

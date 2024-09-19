@@ -27,7 +27,6 @@ fn main() {
     // Create a piece with the rectangle as the root
     let mut piece = MultiPolygon::new(rectangle, vec![triangle]);
 
-
     piece.for_each_polygon(|p| p.translate(2.0, 1.5));
 
     let mut buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];

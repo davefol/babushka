@@ -254,9 +254,10 @@ pub trait Polygon: Clone + std::fmt::Debug {
         for other_vertex in other.iter_vertices() {
             let mut min_projection = None;
             for self_segment in self.iter_segments() {
-				// if (Math.abs((s2.y - s1.y) * direction.x - (s2.x - s1.x) * direction.y) < TOL) {
+                // if (Math.abs((s2.y - s1.y) * direction.x - (s2.x - s1.x) * direction.y) < TOL) {
                 if ((self_segment.end().y() - self_segment.start().y()) * direction.x()
-                    - (self_segment.end().x() - self_segment.start().x()) * direction.y()).abs()
+                    - (self_segment.end().x() - self_segment.start().x()) * direction.y())
+                .abs()
                     < Self::Point::epsilon()
                 {
                     continue;

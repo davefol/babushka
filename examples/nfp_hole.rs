@@ -53,9 +53,13 @@ fn main() {
     // square.set_rotation(PI / 3.0);
     let piece_1 = MultiPolygon::new(square, vec![]);
 
-    
     let mut nfp_list = vec![];
-    nfp_list.extend(piece_0.outer().no_fit_polygon(piece_1.outer(), false, false).unwrap());
+    nfp_list.extend(
+        piece_0
+            .outer()
+            .no_fit_polygon(piece_1.outer(), false, false)
+            .unwrap(),
+    );
     for hole in piece_0.holes() {
         nfp_list.extend(hole.no_fit_polygon(piece_1.outer(), true, false).unwrap());
     }
@@ -76,8 +80,24 @@ fn main() {
         panic!("{}", e);
     });
 
-    draw_multi_polygon(&mut buffer, &piece_0, SCALE, WIDTH, HEIGHT, Some(0xFFFFFF), Some(0xFFFF00));
-    draw_multi_polygon(&mut buffer, &piece_1, SCALE, WIDTH, HEIGHT, Some(0xFFFFFF), Some(0xFF00FF));
+    draw_multi_polygon(
+        &mut buffer,
+        &piece_0,
+        SCALE,
+        WIDTH,
+        HEIGHT,
+        Some(0xFFFFFF),
+        Some(0xFFFF00),
+    );
+    draw_multi_polygon(
+        &mut buffer,
+        &piece_1,
+        SCALE,
+        WIDTH,
+        HEIGHT,
+        Some(0xFFFFFF),
+        Some(0xFF00FF),
+    );
     for contour in nfp_list {
         let nfp = Polygon::from(contour);
         draw_polygon(&mut buffer, &nfp, 0xFF0000, SCALE, WIDTH, HEIGHT);
@@ -86,5 +106,4 @@ fn main() {
     while window.is_open() && !window.is_key_down(Key::Escape) {
         window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
     }
-
 }

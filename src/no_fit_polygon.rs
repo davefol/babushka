@@ -173,7 +173,7 @@ pub trait ComputeNoFitPolygon: Polygon {
                     //         touching.b
                     //     )
                     // }
-                    
+
                     let vertex_self = self_c.get_vertex(touching.a);
                     self_marked[touching.a] = true;
 
@@ -452,7 +452,8 @@ pub trait ComputeNoFitPolygon: Polygon {
                     // if cfg!(debug_assertions) {
                     //     println!("\t\tinner loop: {j}");
                     // }
-                    other.set_offset(*self_segment.start() - (other.get_vertex(j) - other.offset()));
+                    other
+                        .set_offset(*self_segment.start() - (other.get_vertex(j) - other.offset()));
 
                     let mut other_inside = None::<bool>;
                     // TODO: This kinda looks suspicious
@@ -524,10 +525,10 @@ pub trait ComputeNoFitPolygon: Polygon {
                     //         match d1 { Some(d) => d.to_f64().unwrap(), None => std::f64::NAN},
                     //         match d2 { Some(d) => d.to_f64().unwrap(), None => std::f64::NAN},
                     //     );
-                    // } 
+                    // }
 
                     // only slide until no longer negative
-					// console.log(`d !== null: ${d !== null}, !almosteq: ${!_almostEqual(d, 0)}, d > 0: ${d}`);
+                    // console.log(`d !== null: ${d !== null}, !almosteq: ${!_almostEqual(d, 0)}, d > 0: ${d}`);
                     // if cfg!(debug_assertions) {
                     //     println!(
                     //         "\t\td !== null: {}, !almosteq: {}, d > 0: {}",

@@ -1,6 +1,6 @@
 use babushka::kernelf64::{Point2D, Polygon};
-use babushka::parsers::terashima::{parse_terashima, TerashimaInstance};
 use babushka::multi_polygon::MultiPolygon;
+use babushka::parsers::terashima::{parse_terashima, TerashimaInstance};
 use babushka::polygon::Polygon as _;
 use babushka::raster::{draw_multi_polygon, draw_polygon, draw_text};
 use babushka::utils::spread_grid;
@@ -30,7 +30,11 @@ fn main() {
     {
         instance.pieces[idx].translate_center_to_point(&location);
     }
-    let pieces: Vec<MultiPolygon<_>> = instance.pieces.into_iter().map(|p| MultiPolygon::new(p, vec![])).collect();
+    let pieces: Vec<MultiPolygon<_>> = instance
+        .pieces
+        .into_iter()
+        .map(|p| MultiPolygon::new(p, vec![]))
+        .collect();
 
     let mut buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];
     buffer.fill(0);

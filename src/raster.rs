@@ -9,8 +9,8 @@ use anyhow::Result;
 use approx::abs_diff_eq;
 use font8x8::UnicodeFonts;
 use gif::{Encoder, Frame, Repeat};
-use itertools::{ChunkBy, Itertools};
-use num_traits::{Float, Num, NumCast, One, ToPrimitive};
+use itertools::Itertools;
+use num_traits::{Float, NumCast, One, ToPrimitive};
 use petgraph::graph::NodeIndex;
 use std::fs::File;
 
@@ -461,15 +461,20 @@ where
     I: IntoIterator<Item = P>,
     P: Point2D,
 {
-    contour.into_iter().tuple_windows().map(|(a, b)| {
-        let slope = b - a;
-        let magnitude = slope.dot(&slope).sqrt();
-        let n = magnitude / interval;
-        let increment = <P as Point2D>::Value::one() / n;
+    contour
+        .into_iter()
+        .tuple_windows()
+        .map(|(a, b)| {
+            let slope = b - a;
+            let magnitude = slope.dot(&slope).sqrt();
+            let n = magnitude / interval;
+            let increment = <P as Point2D>::Value::one() / n;
 
-        (0..n.round().to_usize().unwrap()).map(move |x| {
-            let scale = <<P as Point2D>::Value as NumCast>::from(x).unwrap() * increment;
-            a + slope * scale
+            (0..n.round().to_usize().unwrap()).map(move |x| {
+                let scale = <<P as Point2D>::Value as NumCast>::from(x).unwrap() * increment;
+                a + slope * scale
+            })
         })
-    }).flatten().collect()
+        .flatten()
+        .collect()
 }
