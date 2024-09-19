@@ -11,3 +11,4 @@ pub mod polygon_graph;
 pub mod raster;
 pub mod segment;
 pub mod utils;
+pub mod nesting;

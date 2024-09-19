@@ -42,7 +42,7 @@ fn main() {
     square.set_offset(Point2D::from_xy(390.0, 290.0));
     let piece_1 = MultiPolygon::new(square, vec![]);
 
-    let nfp_list = piece_0.no_fit_polygon(&piece_1);
+    let nfp_list = piece_0.no_fit_polygon(&piece_1, true, true);
 
     let mut buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];
 

@@ -31,15 +31,29 @@ impl<P: Polygon> MultiPolygon<P> {
 }
 
 impl<P: Polygon + ComputeNoFitPolygon> MultiPolygon<P> {
-    pub fn no_fit_polygon(&self, other: &Self) -> Vec<Vec<P::Point>> {
+    /// compute the no fit polygon of self and other.
+    /// If include_outer, then other may be placed outside of self.
+    /// If include_holes is true, then also return the nfp contours
+    /// of all of the holes of self.
+    pub fn no_fit_polygon(
+        &self,
+        other: &Self,
+        include_outer: bool,
+        include_holes: bool,
+    ) -> Vec<Vec<P::Point>> {
         let mut nfp_list = vec![];
-        nfp_list.extend(
-            self.outer()
-                .no_fit_polygon(other.outer(), false, false)
-                .unwrap(),
-        );
-        for hole in self.holes() {
-            nfp_list.extend(hole.no_fit_polygon(other.outer(), true, false).unwrap());
+
+        if include_outer {
+            nfp_list.extend(
+                self.outer()
+                    .no_fit_polygon(other.outer(), false, false)
+                    .unwrap(),
+            );
+        }
+        if include_holes {
+            for hole in self.holes() {
+                nfp_list.extend(hole.no_fit_polygon(other.outer(), true, false).unwrap());
+            }
         }
 
         nfp_list
@@ -49,7 +63,7 @@ impl<P: Polygon + ComputeNoFitPolygon> MultiPolygon<P> {
 mod tests {
 
     #[test]
-    fn test_no_fit_polygon() {
+    fn test_no_fit_polygon_include_outer_and_holes() {
         use super::MultiPolygon;
         use crate::kernelf64::*;
         use crate::point::Point2D as _;
@@ -86,7 +100,7 @@ mod tests {
         square.set_offset(Point2D::from_xy(390.0, 290.0));
         let piece_1 = MultiPolygon::new(square, vec![]);
 
-        let nfp = piece_0.no_fit_polygon(&piece_1);
+        let nfp = piece_0.no_fit_polygon(&piece_1, true, true);
 
         let expected = vec![
             vec![
