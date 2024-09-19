@@ -7,6 +7,7 @@ use crate::point::Point2D;
 use crate::polygon::Polygon;
 use anyhow::{anyhow, Result};
 
+#[derive(Debug, Clone)]
 pub struct PieceDescription<P: Polygon> {
     pub piece: MultiPolygon<P>,
     pub allowed_rotations: Vec<<P::Point as Point2D>::Value>,
@@ -27,12 +28,20 @@ impl<P: Polygon> PieceDescription<P> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct IrregularBinPackingProblem<P: Polygon> {
     bin: MultiPolygon<P>,
     piece_descriptions: Vec<PieceDescription<P>>,
 }
 
 impl<P: Polygon> IrregularBinPackingProblem<P> {
+    pub fn new(bin: MultiPolygon<P>, piece_descriptions: Vec<PieceDescription<P>>) -> Self {
+        Self {
+            bin,
+            piece_descriptions
+        }
+    }
+
     /// Returns a new builder instance for constructing a problem
     pub fn builder() -> IrregularBinPackingProblemBuilder<P> {
         IrregularBinPackingProblemBuilder::new()
@@ -47,8 +56,10 @@ impl<P: Polygon> IrregularBinPackingProblem<P> {
     pub fn piece_descriptions(&self) -> &Vec<PieceDescription<P>> {
         &self.piece_descriptions
     }
+
 }
 
+#[derive(Debug, Clone)]
 pub struct IrregularBinPackingProblemBuilder<P: Polygon> {
     bin: Option<MultiPolygon<P>>,
     piece_descriptions: Vec<PieceDescription<P>>,

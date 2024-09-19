@@ -15,7 +15,9 @@
 //! - each of next N lines: number of vertices and coordinates x1 y1 x2 y2 x3 y3 ... xN yN
 //!   where each piece is placed in the optimal solution.
 
-use crate::point::Point2D;
+use crate::multi_polygon::MultiPolygon;
+use crate::nesting::problem::PieceDescription;
+use crate::{nesting::problem::IrregularBinPackingProblem, point::Point2D};
 use crate::polygon::Polygon;
 use anyhow::{anyhow, Result};
 use num_traits::Zero;
@@ -28,6 +30,21 @@ use std::{
 pub struct TerashimaInstance<P: Polygon> {
     pub bin: P,
     pub pieces: Vec<P>,
+}
+
+impl<P: Polygon> From<TerashimaInstance<P>> for IrregularBinPackingProblem<P> {
+    fn from(terashima: TerashimaInstance<P>) -> Self {
+        IrregularBinPackingProblem::new(
+            MultiPolygon::new(terashima.bin, vec![]),
+            terashima.pieces.into_iter().map(|p| {
+                PieceDescription::new(
+                MultiPolygon::new(p, vec![]),
+                vec![],
+                1
+                )
+            }).collect()
+        )
+    }
 }
 
 pub fn parse_terashima<P: Polygon, R: Read>(reader: R) -> Result<TerashimaInstance<P>>

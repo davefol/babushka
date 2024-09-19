@@ -1,4 +1,4 @@
-use crate::{no_fit_polygon::ComputeNoFitPolygon, polygon::Polygon};
+use crate::{bounding_box::BoundingBox, no_fit_polygon::ComputeNoFitPolygon, point::Point2D, polygon::Polygon};
 
 #[derive(Debug, Clone)]
 pub struct MultiPolygon<P: Polygon> {
@@ -27,6 +27,10 @@ impl<P: Polygon> MultiPolygon<P> {
         for hole in &mut self.holes {
             f(hole);
         }
+    }
+
+    pub fn bounding_box(&self) -> BoundingBox<<P::Point as Point2D>::Value> {
+        self.outer.bounding_box()
     }
 }
 

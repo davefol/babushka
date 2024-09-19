@@ -1,10 +1,12 @@
 use std::path::PathBuf;
 
 use crate::multi_polygon::MultiPolygon;
+use crate::nesting::problem::IrregularBinPackingProblem;
 use crate::point::Point2D;
 use crate::polygon::Polygon;
 use crate::polygon_graph::PolygonGraph;
 use crate::segment::{Segment, SegmentSegmentIntersection};
+use crate::utils::spread_grid;
 use anyhow::Result;
 use approx::abs_diff_eq;
 use font8x8::UnicodeFonts;
@@ -13,6 +15,11 @@ use itertools::Itertools;
 use num_traits::{Float, NumCast, One, ToPrimitive};
 use petgraph::graph::NodeIndex;
 use std::fs::File;
+
+pub const TAB10: [u32; 10] = [
+    0x1f77b4, 0xff7f0e, 0x2ca02c, 0xd62728, 0x9467bd, 0x8c564b, 0xe377c2, 0x7f7f7f, 0xbcbd22,
+    0x17becf,
+];
 
 pub fn world_to_screen(x: f64, y: f64, scale: f64, height: usize) -> (i32, i32) {
     ((x * scale) as i32, height as i32 - (y * scale) as i32)
@@ -477,4 +484,74 @@ where
         })
         .flatten()
         .collect()
+}
+
+pub fn draw_irregular_bin_packing_problem<P: Polygon>(
+    buffer: &mut Vec<u32>,
+    problem: &IrregularBinPackingProblem<P>,
+    scale: f64,
+    width: usize,
+    height: usize,
+    stroke_color: Option<u32>,
+    fill_color_scheme: Option<&[u32]>,
+) where
+    <P as Polygon>::Segment: From<(<P as Polygon>::Point, <P as Polygon>::Point)>,
+    <P as Polygon>::Point: From<(f64, f64)>,
+{
+    let mut bin = problem.bin().clone();
+    bin.for_each_polygon(|polygon| {
+        polygon.translate_center_to_point(&P::Point::from_xy(
+            <<P::Point as Point2D>::Value as NumCast>::from(width as f64 / scale / 2.0).unwrap(),
+            <<P::Point as Point2D>::Value as NumCast>::from(height as f64 / scale / 2.0).unwrap(),
+        ));
+    });
+    draw_multi_polygon(buffer, &bin, scale, width, height, stroke_color, None);
+
+    // draw pieces
+    let mut piece_descriptions = problem.piece_descriptions().clone();
+
+    for (idx, location) in spread_grid::<P::Point>(
+        piece_descriptions.len(),
+        <<P::Point as Point2D>::Value as NumCast>::from(width as f64 / scale).unwrap(),
+        <<P::Point as Point2D>::Value as NumCast>::from(height as f64 / scale).unwrap(),
+        <<P::Point as Point2D>::Value as NumCast>::from(0.75).unwrap(),
+    )
+    .enumerate()
+    {
+        piece_descriptions[idx].piece.for_each_polygon(|polygon| {
+            polygon.translate_center_to_point(&location);
+        });
+        let piece_bbox = piece_descriptions[idx].piece.bounding_box();
+        let (text_x, text_y) = world_to_screen(
+            piece_bbox.max_x.to_f64().unwrap(),
+            piece_bbox.min_y.to_f64().unwrap(),
+            scale,
+            height,
+        );
+        draw_text(
+            buffer,
+            &format!("n={}", piece_descriptions[idx].instances),
+            text_x as usize,
+            text_y as usize,
+            0xFFFFFF,
+            width,
+            height,
+        );
+    }
+
+    for (i, piece_description) in piece_descriptions.iter().enumerate() {
+        let fill_color = match fill_color_scheme {
+            Some(ref fill_color_scheme) => Some(fill_color_scheme[i % fill_color_scheme.len()]),
+            None => None,
+        };
+        draw_multi_polygon(
+            buffer,
+            &piece_description.piece,
+            scale,
+            width,
+            height,
+            stroke_color,
+            fill_color,
+        );
+    }
 }
