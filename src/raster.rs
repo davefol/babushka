@@ -6,7 +6,7 @@ use crate::polygon::Polygon;
 use crate::polygon_graph::PolygonGraph;
 use crate::segment::{Segment, SegmentSegmentIntersection};
 use anyhow::Result;
-use approx::{abs_diff_eq, AbsDiffEq};
+use approx::abs_diff_eq;
 use font8x8::UnicodeFonts;
 use gif::{Encoder, Frame, Repeat};
 use itertools::{ChunkBy, Itertools};
@@ -413,7 +413,6 @@ pub fn create_gif<F>(
     output_path: PathBuf,
     width: usize,
     height: usize,
-    scale: f64,
     frame_delay: u16,
     num_frames: usize,
     mut frame_builder: F,

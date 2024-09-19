@@ -39,7 +39,6 @@ fn main() -> Result<()> {
         path,
         WIDTH,
         HEIGHT,
-        SCALE,
         FRAME_DELAY,
         nfp[0].len(),
         |frame_index, buffer| {

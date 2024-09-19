@@ -3,7 +3,7 @@ use crate::polygon::Polygon;
 use crate::segment::Segment;
 use approx::{abs_diff_eq, AbsDiffEq};
 use itertools::Itertools;
-use num_traits::{Float, ToPrimitive, Zero};
+use num_traits::{Float, Zero};
 
 #[derive(Debug)]
 enum TouchingType {

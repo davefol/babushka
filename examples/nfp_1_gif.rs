@@ -52,6 +52,7 @@ fn main() -> anyhow::Result<()> {
     for hole in piece_0.holes() {
         nfp_list.extend(hole.no_fit_polygon(piece_1.outer(), true, false).unwrap());
     }
+
     // for v in piece_0.holes().first().unwrap().iter_vertices() {
     //     println!("{{x: {}, y: {}}},", v.x, v.y);
     // }
@@ -68,7 +69,6 @@ fn main() -> anyhow::Result<()> {
         path,
         WIDTH,
         HEIGHT,
-        SCALE,
         FRAME_DELAY,
         num_frames,
         |frame_index, buffer| {

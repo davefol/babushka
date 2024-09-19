@@ -1,7 +1,7 @@
 use babushka::kernelf64::{Point2D, Polygon as KernelPolygon};
 use babushka::multi_polygon::MultiPolygon;
 use babushka::polygon::Polygon;
-use babushka::raster::{draw_multi_polygon, draw_polygon_graph};
+use babushka::raster::draw_multi_polygon;
 use minifb::{Key, Window, WindowOptions};
 
 const WIDTH: usize = 800;

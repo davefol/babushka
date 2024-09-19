@@ -5,7 +5,6 @@ use babushka::point::Point2D as _;
 use babushka::polygon::Polygon as _;
 use babushka::raster::*;
 use minifb::{Key, Window, WindowOptions};
-use std::f64::consts::PI;
 
 const WIDTH: usize = 800;
 const HEIGHT: usize = 600;
@@ -60,6 +59,7 @@ fn main() {
     for hole in piece_0.holes() {
         nfp_list.extend(hole.no_fit_polygon(piece_1.outer(), true, false).unwrap());
     }
+    println!("{:?}", nfp_list);
     // for v in piece_0.holes().first().unwrap().iter_vertices() {
     //     println!("{{x: {}, y: {}}},", v.x, v.y);
     // }

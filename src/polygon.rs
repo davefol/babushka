@@ -3,7 +3,7 @@ use crate::segment::Segment;
 use crate::{bounding_box::BoundingBox, segment::SegmentSegmentIntersection};
 use approx::abs_diff_eq;
 use itertools::Itertools;
-use num_traits::{Float, One, ToPrimitive, Zero};
+use num_traits::{Float, One, Zero};
 
 pub trait Polygon: Clone + std::fmt::Debug {
     type Point: Point2D;

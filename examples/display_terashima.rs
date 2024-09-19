@@ -2,7 +2,7 @@ use babushka::kernelf64::{Point2D, Polygon};
 use babushka::parsers::terashima::{parse_terashima, TerashimaInstance};
 use babushka::multi_polygon::MultiPolygon;
 use babushka::polygon::Polygon as _;
-use babushka::raster::{draw_multi_polygon, draw_polygon, draw_polygon_graph, draw_text};
+use babushka::raster::{draw_multi_polygon, draw_polygon, draw_text};
 use babushka::utils::spread_grid;
 use minifb::{Key, Window, WindowOptions};
 use std::fs::File;

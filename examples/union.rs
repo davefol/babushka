@@ -4,7 +4,6 @@ use babushka::clip::{ClipOp, Clippable};
 use babushka::kernelf64::{Point2D, Polygon};
 use babushka::multi_polygon::MultiPolygon;
 use babushka::point::Point2D as _;
-use babushka::polygon::Polygon as _;
 use babushka::raster::{draw_multi_polygon, draw_polygon};
 use minifb::{Key, Window, WindowOptions};
 const WIDTH: usize = 800;
