@@ -1,6 +1,5 @@
 use babushka::kernelf64::{Point2D, Polygon};
 use babushka::multi_polygon::MultiPolygon;
-use babushka::no_fit_polygon::ComputeNoFitPolygon;
 use babushka::point::Point2D as _;
 use babushka::polygon::Polygon as _;
 use babushka::raster::*;
@@ -45,28 +44,10 @@ fn main() {
         Point2D { x: 20.0, y: 20.0 },
         Point2D { x: 0.0, y: 20.0 },
     ]);
-    // for v in square.iter_mut_vertices_local() {
-    //     v.x += 390.0;
-    //     v.y += 290.0;
-    // }
     square.set_offset(Point2D::from_xy(390.0, 290.0));
-    // square.set_rotation(PI / 3.0);
     let piece_1 = MultiPolygon::new(square, vec![]);
 
-    let mut nfp_list = vec![];
-    nfp_list.extend(
-        piece_0
-            .outer()
-            .no_fit_polygon(piece_1.outer(), false, false)
-            .unwrap(),
-    );
-    for hole in piece_0.holes() {
-        nfp_list.extend(hole.no_fit_polygon(piece_1.outer(), true, false).unwrap());
-    }
-    println!("{:?}", nfp_list);
-    // for v in piece_0.holes().first().unwrap().iter_vertices() {
-    //     println!("{{x: {}, y: {}}},", v.x, v.y);
-    // }
+    let nfp_list = piece_0.no_fit_polygon(&piece_1);
 
     let mut buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];
 
