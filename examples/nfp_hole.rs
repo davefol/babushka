@@ -22,7 +22,6 @@ fn main() {
         v.x += 400.0;
         v.y += 300.0;
     }
-    // outer.set_offset(Point2D::from_xy(400.0, 300.0));
 
     let mut inner = Polygon::from((0..n_points).map(|i| {
         let angle = 2.0 * std::f64::consts::PI * i as f64 / n_points as f64;
@@ -30,10 +29,6 @@ fn main() {
         let y = 50.0 * angle.sin();
         Point2D::from_xy(x, y)
     }));
-    // for v in inner.iter_mut_vertices_local() {
-    //     v.x += 400.0;
-    //     v.y += 300.0
-    // }
     inner.set_offset(Point2D::from_xy(400.0, 300.0));
 
     let piece_0 = MultiPolygon::new(outer, vec![inner]);
