@@ -378,9 +378,6 @@ pub fn draw_multi_polygon<P: Polygon>(
                 }
             }
             intersections.sort_by(|a, b| a.0.x().partial_cmp(&b.0.x()).unwrap());
-            if intersections.len() % 2 != 0 {
-                println!("intersections: {:?}", intersections);
-            }
             intersections.dedup_by(|a, b| abs_diff_eq!(a.0, b.0) && (a.1 != b.1));
             let intersections_x: Vec<i32> = intersections
                 .iter()
