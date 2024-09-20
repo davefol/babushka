@@ -24,9 +24,19 @@ impl<P: Polygon> GeneticIrregularBinPacker<P> {
         seed: u64,
     ) -> Self {
         let mut rng = ChaCha8Rng::seed_from_u64(seed);
+
         let mut order = vec![];
         let mut rotations = vec![];
-        for (i, piece_description) in problem.piece_descriptions().iter().enumerate() {
+        let mut indices: Vec<usize> = (0..problem.piece_descriptions().len()).collect();
+
+        // heuristic: place bigger elements first
+        indices.sort_by_key(|i| {
+            problem.piece_descriptions()[*i].piece.area();
+        });
+        indices.reverse();
+
+        for i in indices {
+            let piece_description = &problem.piece_descriptions()[i];
             for _ in 0..piece_description.instances {
                 order.push(i);
                 if let Some(rotation) = piece_description.allowed_rotations.choose(&mut rng) {
