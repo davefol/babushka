@@ -38,7 +38,7 @@ impl<P: Polygon> IrregularBinPackingProblem<P> {
     pub fn new(bin: MultiPolygon<P>, piece_descriptions: Vec<PieceDescription<P>>) -> Self {
         Self {
             bin,
-            piece_descriptions
+            piece_descriptions,
         }
     }
 
@@ -56,7 +56,6 @@ impl<P: Polygon> IrregularBinPackingProblem<P> {
     pub fn piece_descriptions(&self) -> &Vec<PieceDescription<P>> {
         &self.piece_descriptions
     }
-
 }
 
 #[derive(Debug, Clone)]
@@ -114,5 +113,60 @@ impl<P: Polygon> IrregularBinPackingProblemBuilder<P> {
             bin: self.bin.ok_or(anyhow!("No bin set"))?,
             piece_descriptions: self.piece_descriptions,
         })
+    }
+}
+
+pub struct IrregularBinPackingSolution<P: Polygon> {
+    placements: Vec<IrregularBinPackingPlacement<P>>,
+}
+
+impl <P: Polygon> IrregularBinPackingSolution<P> {
+    pub fn new(placements: Vec<IrregularBinPackingPlacement<P>>) -> Self {
+        Self {
+            placements
+        }
+    }
+
+    pub fn placements(&self) -> &Vec<IrregularBinPackingPlacement<P>> {
+        &self.placements
+    }
+}
+
+pub struct IrregularBinPackingPlacement<P: Polygon> {
+    bin_id: usize,
+    piece_id: usize,
+    location: P::Point,
+    rotation: <P::Point as Point2D>::Value,
+}
+
+impl<P: Polygon> IrregularBinPackingPlacement<P> {
+    pub fn new(
+        bin_id: usize,
+        piece_id: usize,
+        location: P::Point,
+        rotation: <P::Point as Point2D>::Value,
+    ) -> Self {
+        IrregularBinPackingPlacement {
+            bin_id,
+            piece_id,
+            location,
+            rotation,
+        }
+    }
+
+    pub fn bin_id(&self) -> usize {
+        self.bin_id
+    }
+
+    pub fn piece_id(&self) -> usize {
+        self.piece_id
+    }
+
+    pub fn location(&self) -> P::Point {
+        self.location
+    }
+
+    pub fn rotation(&self) -> <P::Point as Point2D>::Value {
+        self.rotation
     }
 }

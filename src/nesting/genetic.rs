@@ -1,5 +1,7 @@
 //! Genetic algorithm for irregular bin packing
-use super::problem::IrregularBinPackingProblem;
+use super::problem::{
+    IrregularBinPackingPlacement, IrregularBinPackingProblem, IrregularBinPackingSolution,
+};
 use crate::{point::Point2D, polygon::Polygon};
 use anyhow::{anyhow, Result};
 use num_traits::Zero;
