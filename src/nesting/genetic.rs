@@ -1,14 +1,38 @@
 //! Genetic algorithm for irregular bin packing
+use std::collections::HashMap;
+use std::hash::Hash;
+use num_traits::ToPrimitive;
+
 use super::problem::{
     IrregularBinPackingPlacement, IrregularBinPackingProblem, IrregularBinPackingSolution,
 };
 use crate::{point::Point2D, polygon::Polygon};
 use anyhow::{anyhow, Result};
+use itertools::izip;
 use num_traits::Zero;
 use rand::seq::SliceRandom;
 use rand::Rng;
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct NFPCacheKey<P: Polygon> {
+    a: usize,
+    b: usize,
+    a_rotation: <P::Point as Point2D>::Value,
+    b_rotation: <P::Point as Point2D>::Value,
+    inside: bool,
+}
+
+impl<P: Polygon> Hash for NFPCacheKey<P> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.a.hash(state);
+        self.b.hash(state);
+        self.a_rotation.to_f64().unwrap().to_bits().hash(state);
+        self.b_rotation.to_f64().unwrap().to_bits().hash(state);
+        self.inside.hash(state);
+    }
+}
 
 pub struct GeneticIrregularBinPacker<P: Polygon> {
     problem: IrregularBinPackingProblem<P>,
@@ -16,6 +40,7 @@ pub struct GeneticIrregularBinPacker<P: Polygon> {
     mutation_rate: f64,
     population: Vec<Individual<P>>,
     rng: ChaCha8Rng,
+    nfp_cache: HashMap<NFPCacheKey<P>, Vec<Vec<P::Point>>>
 }
 
 impl<P: Polygon> GeneticIrregularBinPacker<P> {
@@ -56,6 +81,7 @@ impl<P: Polygon> GeneticIrregularBinPacker<P> {
             mutation_rate,
             population,
             rng,
+            nfp_cache: HashMap::new()
         };
         while packer.population.len() < packer.population_size {
             let clone = packer.mutate(&packer.population[0].clone());
@@ -87,6 +113,17 @@ impl<P: Polygon> GeneticIrregularBinPacker<P> {
             }
         }
         clone
+    }
+
+    fn place(&self, individual: Individual<P>) -> IrregularBinPackingSolution<P> {
+        let mut placed: usize = 0;
+        let pieces_to_place = individual.order.len();
+        while placed < pieces_to_place {
+            for (piece_id, rotation) in izip!(individual.order.iter(), individual.rotations.iter())
+            {
+            }
+        }
+        unimplemented!()
     }
 
     pub fn builder() -> GeneticIrregularBinPackerBuilder<P> {
