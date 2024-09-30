@@ -15,10 +15,16 @@ use rand::Rng;
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 
+#[derive(Debug, Clone, Copy, PartialEq, Hash)]
+enum NFPCacheIndex {
+    Indivudual(usize),
+    Bin,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct NFPCacheKey<P: Polygon> {
-    a: usize,
-    b: usize,
+    a: NFPCacheIndex,
+    b: NFPCacheIndex,
     a_rotation: <P::Point as Point2D>::Value,
     b_rotation: <P::Point as Point2D>::Value,
     inside: bool,
