@@ -1,11 +1,12 @@
 //! Genetic algorithm for irregular bin packing
+use num_traits::ToPrimitive;
 use std::collections::HashMap;
 use std::hash::Hash;
-use num_traits::ToPrimitive;
 
 use super::problem::{
     IrregularBinPackingPlacement, IrregularBinPackingProblem, IrregularBinPackingSolution,
 };
+use crate::no_fit_polygon::ComputeNoFitPolygon;
 use crate::{point::Point2D, polygon::Polygon};
 use anyhow::{anyhow, Result};
 use itertools::izip;
@@ -40,16 +41,16 @@ impl<P: Polygon> Hash for NFPCacheKey<P> {
     }
 }
 
-pub struct GeneticIrregularBinPacker<P: Polygon> {
+pub struct GeneticIrregularBinPacker<P: Polygon + ComputeNoFitPolygon> {
     problem: IrregularBinPackingProblem<P>,
     population_size: usize,
     mutation_rate: f64,
     population: Vec<Individual<P>>,
     rng: ChaCha8Rng,
-    nfp_cache: HashMap<NFPCacheKey<P>, Vec<Vec<P::Point>>>
+    nfp_cache: HashMap<NFPCacheKey<P>, Vec<Vec<P::Point>>>,
 }
 
-impl<P: Polygon> GeneticIrregularBinPacker<P> {
+impl<P: Polygon + ComputeNoFitPolygon> GeneticIrregularBinPacker<P> {
     pub fn new(
         problem: IrregularBinPackingProblem<P>,
         population_size: usize,
@@ -87,7 +88,7 @@ impl<P: Polygon> GeneticIrregularBinPacker<P> {
             mutation_rate,
             population,
             rng,
-            nfp_cache: HashMap::new()
+            nfp_cache: HashMap::new(),
         };
         while packer.population.len() < packer.population_size {
             let clone = packer.mutate(&packer.population[0].clone());
@@ -122,11 +123,37 @@ impl<P: Polygon> GeneticIrregularBinPacker<P> {
     }
 
     fn place(&self, individual: Individual<P>) -> IrregularBinPackingSolution<P> {
+        let mut bin_id = 0;
         let mut placed: usize = 0;
+        let mut first_in_bin: bool = true;
         let pieces_to_place = individual.order.len();
+        //let mut bins = vec![];
+        let mut bin = self.problem.bin();
+        let mut placements: Vec<IrregularBinPackingPlacement<P>> = vec![];
         while placed < pieces_to_place {
             for (piece_id, rotation) in izip!(individual.order.iter(), individual.rotations.iter())
             {
+                // grab the piece and rotate it
+                let piece_description = &self.problem.piece_descriptions()[*piece_id];
+                let mut piece = piece_description.piece.clone();
+                piece.for_each_polygon(|p| p.set_rotation(*rotation));
+
+                // for the first placement, put the piece on the left
+                if first_in_bin {
+                    let nf = bin.no_fit_polygon(&piece, false, true);
+                    let left_most = nf
+                        .iter()
+                        .flatten()
+                        .min_by(|a, b| a.x().partial_cmp(&b.x()).unwrap())
+                        .unwrap();
+                    // TODO: add test for when polygon doesn't fit.
+                    placements.push(IrregularBinPackingPlacement::new(
+                        bin_id,
+                        *piece_id,
+                        left_most.clone(),
+                        rotation.clone(),
+                    ));
+                }
             }
         }
         unimplemented!()
@@ -150,14 +177,14 @@ impl<P: Polygon> Individual<P> {
     }
 }
 
-pub struct GeneticIrregularBinPackerBuilder<P: Polygon> {
+pub struct GeneticIrregularBinPackerBuilder<P: Polygon + ComputeNoFitPolygon> {
     problem: Option<IrregularBinPackingProblem<P>>,
     population_size: usize,
     mutation_rate: f64,
     seed: u64,
 }
 
-impl<P: Polygon> GeneticIrregularBinPackerBuilder<P> {
+impl<P: Polygon + ComputeNoFitPolygon> GeneticIrregularBinPackerBuilder<P> {
     pub fn new() -> Self {
         Self {
             problem: None,
